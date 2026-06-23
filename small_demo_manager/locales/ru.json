@@ -43,6 +43,13 @@
     "match.col.damage": "Урон",
 
     "audio.extract.button": "Извлечь аудио",
+    "audio.save_all.button": "Сохранить всё аудио игрока",
+    "audio.save_one": "Сохранить один раунд",
+    "audio.save_all": "Сохранить всё аудио игрока",
+    "audio.saved_path.title": "Путь сохранения",
+    "audio.saved_path.msg": "Путь для сохранения голосовых файлов не указан.\n\nНастройте его в Settings → Paths.",
+    "audio.saved_ok": "Сохранено!",
+    "audio.saved_count": "Сохранено {count} файлов из {player}!",
     "audio.players.label": "Игроки",
     "audio.voices.label": "Файлы голоса",
     "audio.saved.label": "Сохранённые файлы",

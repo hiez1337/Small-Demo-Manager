@@ -350,7 +350,7 @@ class MainWindow(QMainWindow):
         self.extract_btn.clicked.connect(self._extract_audio)
         self.extract_btn.setEnabled(False)
         btn_layout.addWidget(self.extract_btn)
-        self.save_all_btn = QPushButton("Save All Player Audio")
+        self.save_all_btn = QPushButton(tr("audio.save_all.button"))
         self.save_all_btn.setEnabled(False)
         self.save_all_btn.clicked.connect(self._save_all_player_audio)
         btn_layout.addWidget(self.save_all_btn)
@@ -885,11 +885,9 @@ class MainWindow(QMainWindow):
         saved_path = read("SavedVoiceFilesPath", "")
         if not saved_path or not os.path.isdir(saved_path):
             from PyQt6.QtWidgets import QMessageBox
-            reply = QMessageBox.question(
-                self, "Saved Voice Path",
-                "Saved voice files path is not configured.\n\n"
-                "Go to Settings → Paths and set a folder first.",
-                QMessageBox.StandardButton.Ok
+            QMessageBox.information(
+                self, tr("audio.saved_path.title"),
+                tr("audio.saved_path.msg")
             )
             return False
         return True
@@ -902,8 +900,8 @@ class MainWindow(QMainWindow):
         if 0 <= idx < len(self._current_player_audio):
             file_path = self._current_player_audio[idx].file_path
             menu = QMenu(self)
-            menu.addAction("Save One Round", lambda: self._save_voice_file(file_path))
-            menu.addAction("Save All Player Audio", lambda: self._save_all_player_audio())
+            menu.addAction(tr("audio.save_one"), lambda: self._save_voice_file(file_path))
+            menu.addAction(tr("audio.save_all"), lambda: self._save_all_player_audio())
             menu.exec(self.voice_list.viewport().mapToGlobal(pos))
 
     def _save_voice_file(self, source_path: str):
@@ -912,7 +910,7 @@ class MainWindow(QMainWindow):
         try:
             afm.copy_to_saved(source_path)
             self._refresh_saved_audio()
-            self._snackbar("Saved!")
+            self._snackbar(tr("audio.saved_ok"))
         except Exception as e:
             self._snackbar(f"Save error: {e}", error=True)
 
@@ -929,7 +927,8 @@ class MainWindow(QMainWindow):
             except Exception:
                 continue
         self._refresh_saved_audio()
-        self._snackbar(f"Saved {saved} files from {self._selected_player_name}!")
+        msg = tr("audio.saved_count").replace("{count}", str(saved)).replace("{player}", self._selected_player_name)
+        self._snackbar(msg)
 
     def _refresh_saved_audio(self):
         afm.refresh_saved_files()
@@ -1092,6 +1091,7 @@ class MainWindow(QMainWindow):
         self._cmd_label.setText(tr("bitfield.command.label"))
         self._copy_btn.setText(tr("bitfield.copy.button"))
         self.extract_btn.setText(tr("audio.extract.button"))
+        self.save_all_btn.setText(tr("audio.save_all.button"))
         self._players_label.setText(tr("audio.players.label"))
         self._voices_label.setText(tr("audio.voices.label"))
         self._saved_label2.setText(tr("audio.saved.label"))

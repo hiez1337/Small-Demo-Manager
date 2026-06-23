@@ -43,6 +43,13 @@
     "match.col.damage": "Damage",
 
     "audio.extract.button": "Extract Audio",
+    "audio.save_all.button": "Save All Player Audio",
+    "audio.save_one": "Save One Round",
+    "audio.save_all": "Save All Player Audio",
+    "audio.saved_path.title": "Saved Voice Path",
+    "audio.saved_path.msg": "Saved voice files path is not configured.\n\nGo to Settings → Paths and set a folder first.",
+    "audio.saved_ok": "Saved!",
+    "audio.saved_count": "Saved {count} files from {player}!",
     "audio.players.label": "Players",
     "audio.voices.label": "Voice Files",
     "audio.saved.label": "Saved Voice Files",

@@ -2,6 +2,28 @@
 
 ---
 
+## v2.0.2 — 24.06.2026
+*Timeline, Duration, UI polish*
+
+### Новое
+- **Timeline tab** — хронологическая лента убийств по раундам, фильтр по раунду, оружие, HS
+- **Duration** — длительность матча теперь высчитывается и отображается (MM:SS)
+- **8 вкладок**: Home, Spectator, Stats, Timeline, Voice, Settings, About, Guide
+- **README** — двуязычный (EN/RU) с collapsible секциями
+- **Release CI** — GitHub Actions собирает .exe и создаёт Release с описанием
+
+### Исправлено
+- **Сортировка статистики** — игроки сортируются по Score (CCSPlayerController.m_iScore), как в TAB в игре
+- **Вёрстка** — контент не уплывает при вертикальном растягивании окна (addStretch)
+- **Цветовой контраст** — accent #1565C0 для WCAG AA (был #64B5F6, 2.21:1 FAIL)
+- **Копирайтинг** — все UI-тексты переписаны: табы (Spectator, Stats, Voice, Guide), кнопки, сообщения
+- **Дизайн-токены** — tokens.py, централизованные цвета, типографика, отступы
+- **Анимация табов** — fade-in 150ms OutCubic при переключении
+- **URL leetify** — исправлен на /app/profile/
+- **Импорт sys** — audio_extractor.py и main_window.py
+
+---
+
 ## v2.0.1 — 23.06.2026
 *Hotfix: исправления после порта*
 

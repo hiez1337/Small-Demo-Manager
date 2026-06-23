@@ -37,7 +37,7 @@ from tokens import TOKENS
 
 GITHUB_REPO = "https://api.github.com/repos/pythaeusone/Faceit-Demo-Voice-Calculator/releases"
 PATCH_NOTES_URL = "https://raw.githubusercontent.com/hiez1337/Small-Demo-Manager/main/PATCH_NOTES.md"
-CURRENT_VERSION = "1.0.8"
+CURRENT_VERSION = "2.0.2"
 if getattr(sys, "frozen", False):
     _BASE_DIR = sys._MEIPASS
 else:

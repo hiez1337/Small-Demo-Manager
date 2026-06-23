@@ -223,6 +223,7 @@ class MainWindow(QMainWindow):
         self.patch_notes.setPlainText(tr("home.notes.loading"))
         self._patch_card.add_widget(self.patch_notes)
         layout.addWidget(self._patch_card)
+        layout.addStretch()
         QTimer.singleShot(100, self._fetch_patch_notes)
 
         scroll.setWidget(inner)
@@ -480,6 +481,7 @@ class MainWindow(QMainWindow):
         lang_row.addStretch()
         lang_card.add_layout(lang_row)
         layout.addWidget(lang_card)
+        layout.addStretch()
 
         scroll.setWidget(inner)
         tab_layout = QVBoxLayout(tab)
@@ -532,6 +534,7 @@ class MainWindow(QMainWindow):
         )
         self._support_card.add_widget(self._fork_btn)
         self._about_layout.addWidget(self._support_card)
+        self._about_layout.addStretch()
 
         scroll.setWidget(inner)
         tab_layout = QVBoxLayout(tab)
@@ -566,6 +569,7 @@ class MainWindow(QMainWindow):
             card.add_widget(lbl)
             layout.addWidget(card)
 
+        layout.addStretch()
         scroll.setWidget(inner)
         tab_layout = QVBoxLayout(tab)
         tab_layout.setContentsMargins(0, 0, 0, 0)

@@ -4,7 +4,11 @@ import struct
 from typing import Callable, Optional
 
 # Add bundled opus.dll to PATH before importing opuslib
-_resources_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")
+if getattr(sys, "frozen", False):
+    _base_dir = sys._MEIPASS
+else:
+    _base_dir = os.path.dirname(os.path.abspath(__file__))
+_resources_dir = os.path.join(_base_dir, "resources")
 _opus_path = os.path.join(_resources_dir, "opus.dll")
 if os.path.isfile(_opus_path):
     os.environ["PATH"] = _resources_dir + os.pathsep + os.environ.get("PATH", "")

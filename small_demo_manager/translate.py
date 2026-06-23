@@ -1,10 +1,15 @@
 import json
 import os
+import sys
 from typing import Optional
 from PyQt6.QtCore import QObject, pyqtSignal
 
 
-_LOCALES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locales")
+if getattr(sys, "frozen", False):
+    _BASE_DIR = sys._MEIPASS
+else:
+    _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_LOCALES_DIR = os.path.join(_BASE_DIR, "locales")
 _SUPPORTED = {
     "en": "English",
     "ru": "Русский",

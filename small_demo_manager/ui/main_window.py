@@ -35,7 +35,11 @@ from ui.widgets import Card, IconButton, SectionHeader, ClickableLabel
 GITHUB_REPO = "https://api.github.com/repos/pythaeusone/Faceit-Demo-Voice-Calculator/releases"
 PATCH_NOTES_URL = "https://raw.githubusercontent.com/hiez1337/Small-Demo-Manager/main/PATCH_NOTES.md"
 CURRENT_VERSION = "1.0.8"
-_RES_DIR = os.path.join(Path(__file__).resolve().parent.parent, "resources")
+if getattr(sys, "frozen", False):
+    _BASE_DIR = sys._MEIPASS
+else:
+    _BASE_DIR = str(Path(__file__).resolve().parent.parent)
+_RES_DIR = os.path.join(_BASE_DIR, "resources")
 _TAB_ICONS = {
     "home": os.path.join(_RES_DIR, "homeNew.png"),
     "calc": os.path.join(_RES_DIR, "calculatorNew.png"),

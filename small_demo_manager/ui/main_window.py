@@ -7,6 +7,7 @@ import urllib.request
 import json
 import threading
 from typing import Optional
+from urllib.request import urlopen, Request
 
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
@@ -30,6 +31,7 @@ from ui.widgets import Card, IconButton, SectionHeader, ClickableLabel
 
 
 GITHUB_REPO = "https://api.github.com/repos/pythaeusone/Faceit-Demo-Voice-Calculator/releases"
+PATCH_NOTES_URL = "https://raw.githubusercontent.com/hiez1337/Small-Demo-Manager/main/PATCH_NOTES.md"
 CURRENT_VERSION = "1.0.8"
 
 
@@ -186,13 +188,10 @@ class MainWindow(QMainWindow):
         self.patch_notes.setReadOnly(True)
         self.patch_notes.setMaximumHeight(200)
         self.patch_notes.setObjectName("patchNotes")
-        self.patch_notes.setText(
-            "v1.0.8\n- Initial Python port\n- Full Material Design 3 UI\n"
-            "- CS2 demo parsing with demoparser\n- Opus voice extraction\n"
-            "- Audio playback\n- Bitfield calculator\n- Match results"
-        )
+        self.patch_notes.setPlainText("Loading patch notes...")
         patch_card.add_widget(self.patch_notes)
         layout.addWidget(patch_card)
+        QTimer.singleShot(100, self._fetch_patch_notes)
 
         scroll.setWidget(inner)
         tab_layout = QVBoxLayout(tab)
@@ -922,6 +921,17 @@ class MainWindow(QMainWindow):
             self._snackbar("Shell context menu removed.")
 
     # ─── Update Check ──────────────────────────────────────────
+
+    def _fetch_patch_notes(self):
+        def fetch():
+            try:
+                req = Request(PATCH_NOTES_URL, headers={"User-Agent": "Small-Demo-Manager"})
+                with urlopen(req, timeout=10) as resp:
+                    text = resp.read().decode("utf-8")
+                    self.patch_notes.setPlainText(text.strip())
+            except Exception:
+                self.patch_notes.setPlainText("v1.0.8\n- Initial Python port\n- Full Material Design 3 UI\n- CS2 demo parsing with demoparser2\n- Opus voice extraction\n- Audio playback\n- Bitfield calculator\n- Match results")
+        threading.Thread(target=fetch, daemon=True).start()
 
     def _check_for_updates(self):
         def check():

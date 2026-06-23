@@ -1,6 +1,7 @@
 import os
 import re
 import struct
+import sys
 from typing import Callable, Optional
 
 # Add bundled opus.dll to PATH before importing opuslib

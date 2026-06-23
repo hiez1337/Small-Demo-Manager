@@ -640,11 +640,10 @@ class MainWindow(QMainWindow):
 
         self.extract_btn.setEnabled(True)
 
-        src_server = os.path.basename(self.demo_path).lower().find("sourcetv")
-        if src_server < 0:
-            self._snackbar("Demo loaded. Voice extraction may be limited (not SourceTV).")
-        else:
+        if parser.is_sourcetv:
             self._snackbar("Demo loaded successfully!")
+        else:
+            self._snackbar("Demo loaded. Voice extraction may be limited (not SourceTV).")
 
     def _on_demo_error(self, error_msg: str):
         self.bf_progress.setVisible(False)
@@ -804,7 +803,7 @@ class MainWindow(QMainWindow):
         self.voice_list.clear()
 
         self._audio_worker = AudioExtractWorker(self.demo_path, output_dir)
-        self._audio_worker.progress.connect(self.audio_progress.setValue)
+        self._audio_worker.progress.connect(lambda v: self.audio_progress.setValue(int(v)))
         self._audio_worker.finished.connect(self._on_extraction_done)
         self._audio_worker.error.connect(self._on_extraction_error)
         self._audio_worker.start()

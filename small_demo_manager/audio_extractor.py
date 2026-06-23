@@ -124,7 +124,7 @@ def extract_voice(
             for tick, opus_data in segment:
                 try:
                     pcm = decoder.decode(opus_data, 960)
-                    all_pcm.extend(pcm.tobytes())
+                    all_pcm.extend(pcm)
                 except opuslib.OpusError:
                     continue
 

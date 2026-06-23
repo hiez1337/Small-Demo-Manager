@@ -272,8 +272,10 @@ class MainWindow(QMainWindow):
         teams_layout = QHBoxLayout()
         self.team_a_list = QListWidget()
         self.team_a_list.setObjectName("teamList")
+        self.team_a_list.itemClicked.connect(self._update_bitfield)
         self.team_b_list = QListWidget()
         self.team_b_list.setObjectName("teamList")
+        self.team_b_list.itemClicked.connect(self._update_bitfield)
         teams_layout.addWidget(self.team_a_list)
         teams_layout.addWidget(self.team_b_list)
         layout.addLayout(teams_layout, stretch=1)
@@ -686,9 +688,6 @@ class MainWindow(QMainWindow):
                 item.setCheckState(Qt.CheckState.Unchecked)
                 self.team_b_list.addItem(item)
                 spec_id += 1
-
-        self.team_a_list.itemChanged.connect(self._update_bitfield)
-        self.team_b_list.itemChanged.connect(self._update_bitfield)
 
         self._setup_player_context_menu(self.team_a_list)
         self._setup_player_context_menu(self.team_b_list)

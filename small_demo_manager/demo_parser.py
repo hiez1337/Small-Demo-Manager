@@ -1,5 +1,4 @@
 import os
-import re
 from typing import Optional
 
 from demoparser2 import DemoParser
@@ -18,111 +17,79 @@ def _has_data(result) -> bool:
     return bool(result)
 
 
+PLAYER_STATS = [
+    "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iKills",
+    "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iDeaths",
+    "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iAssists",
+    "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iHeadShotKills",
+    "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iDamage",
+    "CCSPlayerController.m_iTeamNum",
+    "CCSPlayerController.m_iScore",
+    "CCSPlayerController.m_iMVPs",
+]
+
+TEAM_STATS = [
+    "CCSTeam.m_iScore",
+    "CCSTeam.m_szClanTeamname",
+    "CCSTeam.m_iTeamNum",
+]
+
+
 class CS2DemoParser:
     def __init__(self, file_path: str):
         self.file_path = file_path
         self._parser = DemoParser(file_path)
         self.map_name: str = ""
-        self.duration: int = 0
         self.demo_name: str = os.path.splitext(os.path.basename(file_path))[0]
         self.is_sourcetv: bool = False
+
+    def _get_last_tick(self) -> int:
+        re = self._parser.parse_event("round_end")
+        if _has_data(re):
+            re = re[re["winner"].notna()]
+            if not re.empty:
+                return int(re["tick"].max())
+        return 0
 
     def parse(self) -> tuple[list[PlayerSnapshot], MatchResult]:
         header = self._parser.parse_header()
         self.map_name = header.get("map_name", "Unknown")
-        self.duration = 0
+        self.is_sourcetv = "sourcetv" in header.get("client_name", "").lower()
 
         player_info = self._parser.parse_player_info()
         if player_info.empty:
             raise ValueError("No player info found in demo")
 
-        death_events = self._parser.parse_event("player_death")
-        round_starts = self._parser.parse_event("round_start")
-        round_ends = self._parser.parse_event("round_end")
-        mvp_events = self._parser.parse_event("round_mvp")
+        last_tick = self._get_last_tick()
+        if last_tick == 0:
+            raise ValueError("No round_end events found in demo")
 
-        team_a_score = 0
-        team_b_score = 0
-        team_a_name = "Team A"
-        team_b_name = "Team B"
+        stats_df = self._parser.parse_ticks(PLAYER_STATS, ticks=[last_tick])
+        team_df = self._parser.parse_ticks(TEAM_STATS, ticks=[last_tick])
 
-        if _has_data(round_ends):
-            for _, row in round_ends.iterrows():
-                winner = str(row.get("winner", "")) if pd.notna(row.get("winner")) else ""
-                if winner == "CT":
-                    team_a_score += 1
-                elif winner == "T":
-                    team_b_score += 1
-            team_a_name = "Counter-Terrorists"
-            team_b_name = "Terrorists"
+        team_data: dict[int, tuple[int, str]] = {}
+        if team_df is not None and not team_df.empty:
+            for _, row in team_df.iterrows():
+                tn = row.get("CCSTeam.m_iTeamNum")
+                score = row.get("CCSTeam.m_iScore")
+                clan = row.get("CCSTeam.m_szClanTeamname")
+                if pd.notna(tn):
+                    tn_int = int(tn)
+                    if tn_int not in team_data:
+                        team_data[tn_int] = (
+                            int(score) if pd.notna(score) else 0,
+                            str(clan) if pd.notna(clan) else "",
+                        )
 
-        total_rounds = 0
-        if _has_data(round_starts):
-            total_rounds = len(round_starts)
+        team_scores: dict[int, int] = {}
+        team_names: dict[int, str] = {}
+        for tn, (sc, nm) in team_data.items():
+            team_scores[tn] = sc
+            team_names[tn] = nm
 
-        player_kills: dict[int, int] = {}
-        player_deaths: dict[int, int] = {}
-        player_assists: dict[int, int] = {}
-        player_damage: dict[int, int] = {}
-        player_hs_kills: dict[int, int] = {}
-        player_multi_kills: dict[int, int] = {}
+        default_team_names = {2: "Terrorists", 3: "Counter-Terrorists"}
 
-        if _has_data(death_events):
-            for _, row in death_events.iterrows():
-                attacker = row.get("attacker_steamid")
-                victim = row.get("user_steamid")
-                assister = row.get("assister_steamid")
-                hs = row.get("headshot", False)
-                wp_damage = row.get("dmg_health", 0)
-
-                try:
-                    aid = int(attacker) if pd.notna(attacker) else 0
-                except (ValueError, TypeError):
-                    aid = 0
-                if aid > 0:
-                    player_kills[aid] = player_kills.get(aid, 0) + 1
-                    player_damage[aid] = player_damage.get(aid, 0) + int(wp_damage or 0)
-                    if hs:
-                        player_hs_kills[aid] = player_hs_kills.get(aid, 0) + 1
-
-                try:
-                    vid = int(victim) if pd.notna(victim) else 0
-                except (ValueError, TypeError):
-                    vid = 0
-                if vid > 0:
-                    player_deaths[vid] = player_deaths.get(vid, 0) + 1
-
-                try:
-                    asid = int(assister) if pd.notna(assister) else 0
-                except (ValueError, TypeError):
-                    asid = 0
-                if asid > 0:
-                    player_assists[asid] = player_assists.get(asid, 0) + 1
-
-        player_mvp: dict[int, int] = {}
-        if _has_data(mvp_events):
-            if isinstance(mvp_events, list):
-                for item in mvp_events:
-                    try:
-                        sid = int(item.get("steamid", 0)) if item.get("steamid") else 0
-                    except (ValueError, TypeError):
-                        sid = 0
-                    if sid > 0:
-                        player_mvp[sid] = player_mvp.get(sid, 0) + 1
-            else:
-                for _, row in mvp_events.iterrows():
-                    try:
-                        sid = int(row.get("steamid")) if pd.notna(row.get("steamid")) else 0
-                    except (ValueError, TypeError):
-                        sid = 0
-                    if sid > 0:
-                        player_mvp[sid] = player_mvp.get(sid, 0) + 1
-
-        team_map: dict[int, int] = {}
-        team_name_map: dict[int, str] = {}
-        name_map: dict[int, str] = {}
-        steamid_set: set[int] = set()
-
+        pi_map: dict[int, tuple[str, int]] = {}
         for _, row in player_info.iterrows():
             try:
                 sid = int(row.get("steamid", 0)) if pd.notna(row.get("steamid")) else 0
@@ -130,64 +97,71 @@ class CS2DemoParser:
                 sid = 0
             if sid <= 0:
                 continue
-            steamid_set.add(sid)
-            name_map[sid] = str(row.get("name", "Unknown"))
+            name = str(row.get("name", "Unknown"))
             try:
-                team_num = int(row.get("team_number", 0)) if pd.notna(row.get("team_number")) else 0
+                tn = int(row.get("team_number", 0)) if pd.notna(row.get("team_number")) else 0
             except (ValueError, TypeError):
-                team_num = 0
-            team_map[sid] = team_num
-            if team_num == 2:
-                team_name_map[sid] = "Terrorists"
-            elif team_num == 3:
-                team_name_map[sid] = "Counter-Terrorists"
-            else:
-                team_name_map[sid] = "Unknown"
-
-        team_a_steamids = [s for s, t in team_map.items() if t == 3]
-        team_b_steamids = [s for s, t in team_map.items() if t == 2]
-
-        self.is_sourcetv = header.get("server_name", "").lower().find("sourcetv") >= 0
+                tn = 0
+            pi_map[sid] = (name, tn)
 
         snapshots: list[PlayerSnapshot] = []
-        for idx, sid in enumerate(team_a_steamids + team_b_steamids):
-            k = player_kills.get(sid, 0)
-            d = player_deaths.get(sid, 0)
-            a = player_assists.get(sid, 0)
-            hs_k = player_hs_kills.get(sid, 0)
-            hs_pct = round((hs_k / k * 100) if k > 0 else 0, 1)
-            kd = round(k / d, 2) if d > 0 else round(float(k), 2)
-            dmg = player_damage.get(sid, 0)
-            mvp = player_mvp.get(sid, 0)
-            three_k = sum(1 for _ in [1])  # simplified
-            four_k = 0
-            five_k = 0
+        for _, row in stats_df.iterrows():
+            sid = int(row["steamid"])
+            if sid == 0:
+                continue
+            if sid not in pi_map:
+                continue
+
+            player_name, team_num = pi_map[sid]
+
+            kills = int(row.get(PLAYER_STATS[0], 0))
+            deaths = int(row.get(PLAYER_STATS[1], 0))
+            assists = int(row.get(PLAYER_STATS[2], 0))
+            hs_kills = int(row.get(PLAYER_STATS[3], 0))
+            damage = int(row.get(PLAYER_STATS[4], 0))
+            mvp = int(row.get(PLAYER_STATS[7], 0))
+            score_val = int(row.get(PLAYER_STATS[6], 0))
+
+            hs_pct = round((hs_kills / kills * 100) if kills > 0 else 0, 1)
+            kd = round(kills / deaths, 2) if deaths > 0 else round(float(kills), 2)
+
+            team_name = team_names.get(team_num, default_team_names.get(team_num, "Unknown"))
+            end_score = team_scores.get(team_num, 0)
 
             snapshots.append(PlayerSnapshot(
                 steam_id=sid,
-                player_name=name_map.get(sid, "Unknown"),
-                team_number=team_map.get(sid, 0),
-                team_name=team_name_map.get(sid, "Unknown"),
-                kills=k,
-                deaths=d,
-                assists=a,
-                headshot_kills=hs_k,
+                player_name=player_name,
+                team_number=team_num,
+                team_name=team_name,
+                kills=kills,
+                deaths=deaths,
+                assists=assists,
+                headshot_kills=hs_kills,
                 headshot_percent=hs_pct,
                 kd=kd,
-                damage=dmg,
+                damage=damage,
                 mvp=mvp,
-                three_k=three_k,
-                four_k=four_k,
-                five_k=five_k,
-                end_score=team_a_score if team_map.get(sid) == 3 else team_b_score,
-                spec_id=idx + 1,
+                three_k=0,
+                four_k=0,
+                five_k=0,
+                end_score=end_score,
+                spec_id=0,
             ))
 
+        team_a_steamids = [s for s in pi_map if pi_map[s][1] == 3]
+        team_b_steamids = [s for s in pi_map if pi_map[s][1] == 2]
+
+        for idx, snap in enumerate(snapshots):
+            if snap.team_number == 3:
+                snap.spec_id = team_a_steamids.index(snap.steam_id) + 1
+            else:
+                snap.spec_id = team_b_steamids.index(snap.steam_id) + 6
+
         match_result = MatchResult(
-            team_a_score=team_a_score,
-            team_b_score=team_b_score,
-            team_a_name=team_a_name if team_a_steamids else "Team A",
-            team_b_name=team_b_name if team_b_steamids else "Team B",
+            team_a_score=team_scores.get(3, 0),
+            team_b_score=team_scores.get(2, 0),
+            team_a_name=team_names.get(3, "Counter-Terrorists"),
+            team_b_name=team_names.get(2, "Terrorists"),
         )
 
         return snapshots, match_result

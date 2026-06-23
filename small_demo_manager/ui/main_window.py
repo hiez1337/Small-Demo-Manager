@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QLabel, QPushButton, QLineEdit, QListWidget, QListWidgetItem,
     QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox,
     QProgressBar, QFileDialog, QMessageBox, QMenu, QSizePolicy,
-    QFrame, QTextEdit, QScrollArea
+    QFrame, QTextEdit, QScrollArea, QComboBox
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt6.QtGui import QAction, QIcon, QFont, QColor, QBrush, QDragEnterEvent, QDropEvent
@@ -27,6 +27,7 @@ from audio_extractor import extract_voice
 import audio_player
 import audio_file_manager as afm
 from config import read, write, key_exists
+from translate import tr, get_translator
 from ui.widgets import Card, IconButton, SectionHeader, ClickableLabel
 
 
@@ -92,8 +93,12 @@ class MainWindow(QMainWindow):
         self._audio_worker: Optional[AudioExtractWorker] = None
         self.patch_notes_fetched.connect(self._on_patch_notes_fetched)
         self.update_available.connect(lambda msg: self._snackbar(msg))
+        self._tr = get_translator()
+        saved_lang = read("Language", "en")
+        self._tr.load(saved_lang)
+        self._tr.language_changed.connect(self._retranslate)
 
-        self.setWindowTitle("Small Demo Manager")
+        self.setWindowTitle(tr("app.title"))
         self.setMinimumSize(1100, 620)
         self.setAcceptDrops(True)
 
@@ -124,13 +129,13 @@ class MainWindow(QMainWindow):
         self.tab_about = self._create_about_tab()
         self.tab_howto = self._create_howto_tab()
 
-        self.tabs.addTab(self.tab_home, "Home")
-        self.tabs.addTab(self.tab_bitfield, "Bitfield-Calc")
-        self.tabs.addTab(self.tab_match, "Match-Results")
-        self.tabs.addTab(self.tab_audio, "Audio-Player")
-        self.tabs.addTab(self.tab_settings, "Settings")
-        self.tabs.addTab(self.tab_about, "About")
-        self.tabs.addTab(self.tab_howto, "HowTo")
+        self.tabs.addTab(self.tab_home, tr("tab.home", "Home"))
+        self.tabs.addTab(self.tab_bitfield, tr("tab.bitfield", "Bitfield-Calc"))
+        self.tabs.addTab(self.tab_match, tr("tab.match", "Match-Results"))
+        self.tabs.addTab(self.tab_audio, tr("tab.audio", "Audio-Player"))
+        self.tabs.addTab(self.tab_settings, tr("tab.settings", "Settings"))
+        self.tabs.addTab(self.tab_about, tr("tab.about", "About"))
+        self.tabs.addTab(self.tab_howto, tr("tab.howto", "HowTo"))
 
     def apply_theme(self):
         theme = "dark_teal.xml" if self._is_dark else "light_teal.xml"
@@ -158,44 +163,40 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(12)
 
-        header = SectionHeader("Small Demo Manager")
-        header.setObjectName("homeHeader")
-        layout.addWidget(header)
+        self._home_header = SectionHeader(tr("home.header"))
+        self._home_header.setObjectName("homeHeader")
+        layout.addWidget(self._home_header)
 
-        welcome_card = Card("Welcome")
-        welcome_lbl = QLabel(
-            "Analyze Counter-Strike 2 demo files (.dem) — extract match statistics, "
-            "voice audio, calculate bitfield masks, and more.\n\n"
-            "Drag & drop a .dem file onto the file path field below to get started."
-        )
-        welcome_lbl.setWordWrap(True)
-        welcome_card.add_widget(welcome_lbl)
-        layout.addWidget(welcome_card)
+        self._welcome_card = Card(tr("home.welcome.title"))
+        self._welcome_lbl = QLabel(tr("home.welcome.text"))
+        self._welcome_lbl.setWordWrap(True)
+        self._welcome_card.add_widget(self._welcome_lbl)
+        layout.addWidget(self._welcome_card)
 
         drop_layout = QHBoxLayout()
         self.home_file_path = QLineEdit()
         self.home_file_path.setReadOnly(True)
-        self.home_file_path.setPlaceholderText("Drop .dem file here...")
+        self.home_file_path.setPlaceholderText(tr("home.drop.placeholder"))
         self.home_file_path.setObjectName("dropField")
         self.home_file_path.dragEnterEvent = self._drag_enter
         self.home_file_path.dragMoveEvent = self._drag_move
         self.home_file_path.dropEvent = self._drop
         drop_layout.addWidget(self.home_file_path)
 
-        load_btn = QPushButton("Load Demo")
-        load_btn.setObjectName("primaryButton")
-        load_btn.clicked.connect(lambda: self._open_file_dialog())
-        drop_layout.addWidget(load_btn)
+        self._load_btn = QPushButton(tr("home.load.button"))
+        self._load_btn.setObjectName("primaryButton")
+        self._load_btn.clicked.connect(lambda: self._open_file_dialog())
+        drop_layout.addWidget(self._load_btn)
         layout.addLayout(drop_layout)
 
-        patch_card = Card("Patch Notes")
+        self._patch_card = Card(tr("home.notes.title"))
         self.patch_notes = QTextEdit()
         self.patch_notes.setReadOnly(True)
         self.patch_notes.setMaximumHeight(200)
         self.patch_notes.setObjectName("patchNotes")
-        self.patch_notes.setPlainText("Loading patch notes...")
-        patch_card.add_widget(self.patch_notes)
-        layout.addWidget(patch_card)
+        self.patch_notes.setPlainText(tr("home.notes.loading"))
+        self._patch_card.add_widget(self.patch_notes)
+        layout.addWidget(self._patch_card)
         QTimer.singleShot(100, self._fetch_patch_notes)
 
         scroll.setWidget(inner)
@@ -377,42 +378,45 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(12)
 
-        theme_card = Card("Theme")
+        self._theme_card = Card(tr("settings.theme.title"))
         theme_row = QHBoxLayout()
-        theme_row.addWidget(QLabel("Dark Mode"))
+        self._theme_label = QLabel(tr("settings.theme.dark"))
+        theme_row.addWidget(self._theme_label)
         self.theme_switch = QCheckBox()
         self.theme_switch.setChecked(self._is_dark)
         self.theme_switch.toggled.connect(lambda: self.toggle_theme())
         theme_row.addWidget(self.theme_switch)
         theme_row.addStretch()
-        theme_card.add_layout(theme_row)
-        layout.addWidget(theme_card)
+        self._theme_card.add_layout(theme_row)
+        layout.addWidget(self._theme_card)
 
-        path_card = Card("Paths")
+        self._path_card = Card(tr("settings.paths.title"))
         cs2_row = QHBoxLayout()
-        cs2_row.addWidget(QLabel("CS2 Demo Folder:"))
+        self._cs2_label = QLabel(tr("settings.paths.cs2"))
+        cs2_row.addWidget(self._cs2_label)
         self.cs2_path_input = QLineEdit()
         self.cs2_path_input.setText(read("CS2DemoPath", ""))
         cs2_row.addWidget(self.cs2_path_input)
-        cs2_browse = QPushButton("Browse")
-        cs2_browse.clicked.connect(lambda: self._browse_folder("cs2"))
-        cs2_row.addWidget(cs2_browse)
-        path_card.add_layout(cs2_row)
+        self._cs2_browse = QPushButton(tr("settings.paths.browse"))
+        self._cs2_browse.clicked.connect(lambda: self._browse_folder("cs2"))
+        cs2_row.addWidget(self._cs2_browse)
+        self._path_card.add_layout(cs2_row)
 
         saved_row = QHBoxLayout()
-        saved_row.addWidget(QLabel("Saved Voice Folder:"))
+        self._saved_label = QLabel(tr("settings.paths.saved"))
+        saved_row.addWidget(self._saved_label)
         self.saved_path_input = QLineEdit()
         self.saved_path_input.setText(read("SavedVoiceFilesPath", ""))
         saved_row.addWidget(self.saved_path_input)
-        saved_browse = QPushButton("Browse")
-        saved_browse.clicked.connect(lambda: self._browse_folder("saved"))
-        saved_row.addWidget(saved_browse)
-        path_card.add_layout(saved_row)
-        layout.addWidget(path_card)
+        self._saved_browse = QPushButton(tr("settings.paths.browse"))
+        self._saved_browse.clicked.connect(lambda: self._browse_folder("saved"))
+        saved_row.addWidget(self._saved_browse)
+        self._path_card.add_layout(saved_row)
+        layout.addWidget(self._path_card)
 
-        shell_card = Card("Shell Integration")
+        shell_card = Card(tr("settings.shell.title"))
         shell_row = QHBoxLayout()
-        self.shell_checkbox = QCheckBox("Add .dem context menu entry")
+        self.shell_checkbox = QCheckBox(tr("settings.shell.checkbox"))
         from shell_context import validate_shell_integration
         self.shell_checkbox.setChecked(validate_shell_integration())
         self.shell_checkbox.toggled.connect(self._toggle_shell)
@@ -420,6 +424,25 @@ class MainWindow(QMainWindow):
         shell_row.addStretch()
         shell_card.add_layout(shell_row)
         layout.addWidget(shell_card)
+
+        lang_card = Card(tr("settings.lang.title"))
+        lang_row = QHBoxLayout()
+        lang_row.addWidget(QLabel(tr("settings.lang.label")))
+        self.lang_combo = QComboBox()
+        from translate import get_translator
+        langs = get_translator().supported_languages()
+        current_lang = self._tr.current_language
+        self.lang_combo_idx: dict[int, str] = {}
+        for i, (code, name) in enumerate(langs.items()):
+            self.lang_combo.addItem(name)
+            self.lang_combo_idx[i] = code
+            if code == current_lang:
+                self.lang_combo.setCurrentIndex(i)
+        self.lang_combo.currentIndexChanged.connect(self._on_language_changed)
+        lang_row.addWidget(self.lang_combo)
+        lang_row.addStretch()
+        lang_card.add_layout(lang_row)
+        layout.addWidget(lang_card)
 
         scroll.setWidget(inner)
         tab_layout = QVBoxLayout(tab)
@@ -435,38 +458,43 @@ class MainWindow(QMainWindow):
         scroll.setWidgetResizable(True)
         scroll.setObjectName("scrollArea")
         inner = QWidget()
-        layout = QVBoxLayout(inner)
-        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(12)
+        self._about_layout = QVBoxLayout(inner)
+        self._about_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self._about_layout.setContentsMargins(20, 20, 20, 20)
+        self._about_layout.setSpacing(12)
 
-        about_card = Card("About")
-        about_lbl = QLabel(
-            "Small Demo Manager — a tool for analyzing Counter-Strike 2 demo files.\n\n"
-            "Originally developed for the CS2 community to simplify demo analysis,\n"
-            "voice extraction, and spectator bitfield calculation."
-        )
-        about_lbl.setWordWrap(True)
-        about_card.add_widget(about_lbl)
-        layout.addWidget(about_card)
+        self._about_card = Card(tr("about.title"))
+        self._about_lbl = QLabel(tr("about.description"))
+        self._about_lbl.setWordWrap(True)
+        self._about_card.add_widget(self._about_lbl)
+        self._about_layout.addWidget(self._about_card)
 
-        version_card = Card("Version")
-        version_lbl = QLabel(f"v{CURRENT_VERSION} (Python port)")
-        version_card.add_widget(version_lbl)
-        layout.addWidget(version_card)
+        self._version_card = Card(tr("about.version.title"))
+        self._version_lbl = QLabel(f"v{CURRENT_VERSION} (Python port)")
+        self._version_card.add_widget(self._version_lbl)
+        self._author_lbl = QLabel(tr("about.author"))
+        self._version_card.add_widget(self._author_lbl)
+        self._fork_lbl = QLabel(tr("about.fork"))
+        self._version_card.add_widget(self._fork_lbl)
+        self._about_layout.addWidget(self._version_card)
 
-        support_card = Card("Support")
-        support_layout = QVBoxLayout()
-        self.update_btn = QPushButton("Check for Updates")
+        self._support_card = Card(tr("about.support.title"))
+        self.update_btn = QPushButton(tr("about.update.button"))
         self.update_btn.clicked.connect(self._manual_update_check)
-        support_card.add_widget(self.update_btn)
+        self._support_card.add_widget(self.update_btn)
 
-        github_btn = QPushButton("GitHub Repository")
-        github_btn.clicked.connect(
+        self._github_btn = QPushButton(tr("about.github.button"))
+        self._github_btn.clicked.connect(
             lambda: webbrowser.open("https://github.com/pythaeusone/Faceit-Demo-Voice-Calculator")
         )
-        support_card.add_widget(github_btn)
-        layout.addWidget(support_card)
+        self._support_card.add_widget(self._github_btn)
+
+        self._fork_btn = QPushButton(tr("about.fork.button"))
+        self._fork_btn.clicked.connect(
+            lambda: webbrowser.open("https://github.com/hiez1337/Small-Demo-Manager")
+        )
+        self._support_card.add_widget(self._fork_btn)
+        self._about_layout.addWidget(self._support_card)
 
         scroll.setWidget(inner)
         tab_layout = QVBoxLayout(tab)
@@ -940,6 +968,42 @@ class MainWindow(QMainWindow):
 
     def _on_patch_notes_fetched(self, text: str):
         self.patch_notes.setPlainText(text)
+
+    def _on_language_changed(self, idx: int):
+        code = self.lang_combo_idx[idx]
+        self._tr.load(code)
+        write("Language", code)
+
+    def _retranslate(self):
+        self.setWindowTitle(tr("app.title"))
+        tab_keys = [
+            "tab.home", "tab.bitfield", "tab.match", "tab.audio",
+            "tab.settings", "tab.about", "tab.howto",
+        ]
+        for i, key in enumerate(tab_keys):
+            self.tabs.setTabText(i, tr(key))
+        self._home_header.setText(tr("home.header"))
+        self._welcome_card.content_layout.itemAt(0).widget().setText(tr("home.welcome.text"))
+        self._welcome_card.setTitle(tr("home.welcome.title"))
+        self.home_file_path.setPlaceholderText(tr("home.drop.placeholder"))
+        self._load_btn.setText(tr("home.load.button"))
+        self._patch_card.setTitle(tr("home.notes.title"))
+        self._about_card.setTitle(tr("about.title"))
+        self._about_lbl.setText(tr("about.description"))
+        self._version_card.setTitle(tr("about.version.title"))
+        self._author_lbl.setText(tr("about.author"))
+        self._fork_lbl.setText(tr("about.fork"))
+        self._support_card.setTitle(tr("about.support.title"))
+        self.update_btn.setText(tr("about.update.button"))
+        self._github_btn.setText(tr("about.github.button"))
+        self._fork_btn.setText(tr("about.fork.button"))
+        self._theme_card.setTitle(tr("settings.theme.title"))
+        self._theme_label.setText(tr("settings.theme.dark"))
+        self._path_card.setTitle(tr("settings.paths.title"))
+        self._cs2_label.setText(tr("settings.paths.cs2"))
+        self._cs2_browse.setText(tr("settings.paths.browse"))
+        self._saved_label.setText(tr("settings.paths.saved"))
+        self._saved_browse.setText(tr("settings.paths.browse"))
 
     def _check_for_updates(self):
         def check():

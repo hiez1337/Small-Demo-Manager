@@ -17,16 +17,21 @@ class Card(QFrame):
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setSpacing(8)
 
+        self._title_label: QLabel | None = None
         if title:
-            title_label = QLabel(title)
-            title_label.setObjectName("cardTitle")
-            title_font = title_label.font()
+            self._title_label = QLabel(title)
+            self._title_label.setObjectName("cardTitle")
+            title_font = self._title_label.font()
             title_font.setPointSize(11)
             title_font.setBold(True)
-            title_label.setFont(title_font)
-            layout.addWidget(title_label)
+            self._title_label.setFont(title_font)
+            layout.addWidget(self._title_label)
 
         self.content_layout = layout
+
+    def setTitle(self, title: str):
+        if self._title_label:
+            self._title_label.setText(title)
 
     def add_widget(self, widget: QWidget):
         self.content_layout.addWidget(widget)

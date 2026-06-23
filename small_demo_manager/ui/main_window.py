@@ -6,6 +6,7 @@ import webbrowser
 import urllib.request
 import json
 import threading
+from pathlib import Path
 from typing import Optional
 from urllib.request import urlopen, Request
 
@@ -17,7 +18,7 @@ from PyQt6.QtWidgets import (
     QFrame, QTextEdit, QScrollArea
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
-from PyQt6.QtGui import QAction, QIcon, QFont, QColor, QBrush, QDragEnterEvent, QDropEvent
+from PyQt6.QtGui import QAction, QIcon, QFont, QColor, QBrush, QDragEnterEvent, QDropEvent, QPixmap
 
 from qt_material import apply_stylesheet
 
@@ -34,6 +35,16 @@ from ui.widgets import Card, IconButton, SectionHeader, ClickableLabel
 GITHUB_REPO = "https://api.github.com/repos/pythaeusone/Faceit-Demo-Voice-Calculator/releases"
 PATCH_NOTES_URL = "https://raw.githubusercontent.com/hiez1337/Small-Demo-Manager/main/PATCH_NOTES.md"
 CURRENT_VERSION = "1.0.8"
+_RES_DIR = os.path.join(Path(__file__).resolve().parent.parent, "resources")
+_TAB_ICONS = {
+    "home": os.path.join(_RES_DIR, "homeNew.png"),
+    "calc": os.path.join(_RES_DIR, "calculatorNew.png"),
+    "match": os.path.join(_RES_DIR, "matchDetailsTrashStar.png"),
+    "audio": os.path.join(_RES_DIR, "audioNew.png"),
+    "settings": os.path.join(_RES_DIR, "settingsNew.png"),
+    "about": os.path.join(_RES_DIR, "aboutNew.png"),
+    "howto": os.path.join(_RES_DIR, "howTo2New.png"),
+}
 
 
 class ParseWorker(QThread):
@@ -130,13 +141,13 @@ class MainWindow(QMainWindow):
         self.tab_about = self._create_about_tab()
         self.tab_howto = self._create_howto_tab()
 
-        self.tabs.addTab(self.tab_home, tr("tab.home", "Home"))
-        self.tabs.addTab(self.tab_bitfield, tr("tab.bitfield", "Bitfield-Calc"))
-        self.tabs.addTab(self.tab_match, tr("tab.match", "Match-Results"))
-        self.tabs.addTab(self.tab_audio, tr("tab.audio", "Audio-Player"))
-        self.tabs.addTab(self.tab_settings, tr("tab.settings", "Settings"))
-        self.tabs.addTab(self.tab_about, tr("tab.about", "About"))
-        self.tabs.addTab(self.tab_howto, tr("tab.howto", "HowTo"))
+        icon_keys = ["home", "calc", "match", "audio", "settings", "about", "howto"]
+        tab_keys = ["tab.home", "tab.bitfield", "tab.match", "tab.audio", "tab.settings", "tab.about", "tab.howto"]
+        tabs = [self.tab_home, self.tab_bitfield, self.tab_match, self.tab_audio, self.tab_settings, self.tab_about, self.tab_howto]
+        for i, tab in enumerate(tabs):
+            icon_path = _TAB_ICONS[icon_keys[i]]
+            icon = QIcon(QPixmap(icon_path)) if os.path.isfile(icon_path) else QIcon()
+            self.tabs.addTab(tab, icon, tr(tab_keys[i]))
 
     def apply_theme(self):
         theme = "dark_teal.xml" if self._is_dark else "light_teal.xml"
@@ -166,6 +177,22 @@ class MainWindow(QMainWindow):
         }}
         """
         ss += btn_style
+        ss += """
+        QListWidget::item { padding: 4px 8px; }
+        QListWidget::item:checked { background-color: rgba(100, 181, 246, 0.15); }
+        QListWidget::indicator {
+            width: 16px; height: 16px;
+            border: 2px solid """ + ("#888888" if self._is_dark else "#555555") + """;
+            border-radius: 3px; background: """ + ("#3A3A3A" if self._is_dark else "#FFFFFF") + """;
+            margin-right: 6px;
+        }
+        QListWidget::indicator:checked {
+            background: """ + accent + """; border: 2px solid """ + accent + """;
+        }
+        QListWidget::indicator:hover {
+            border: 2px solid """ + accent + """;
+        }
+        """
         self._app_ref.setStyleSheet(ss)
 
     def toggle_theme(self):

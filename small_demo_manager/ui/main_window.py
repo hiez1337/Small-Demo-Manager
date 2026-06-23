@@ -140,7 +140,10 @@ class MainWindow(QMainWindow):
     def apply_theme(self):
         theme = "dark_teal.xml" if self._is_dark else "light_teal.xml"
         apply_stylesheet(self._app_ref, theme=theme)
-        self._app_ref.setStyleSheet(self._app_ref.styleSheet())
+        ss = self._app_ref.styleSheet()
+        ss += "\nQComboBox { text-align: left; padding-left: 8px; }"
+        ss += "\nQComboBox QAbstractItemView { text-align: left; }"
+        self._app_ref.setStyleSheet(ss)
 
     def toggle_theme(self):
         self._is_dark = not self._is_dark
@@ -216,27 +219,27 @@ class MainWindow(QMainWindow):
         drop_layout = QHBoxLayout()
         self.bf_file_path = QLineEdit()
         self.bf_file_path.setReadOnly(True)
-        self.bf_file_path.setPlaceholderText("Drop .dem file here...")
+        self.bf_file_path.setPlaceholderText(tr("bitfield.drop.placeholder"))
         self.bf_file_path.setObjectName("dropField")
         self.bf_file_path.dragEnterEvent = self._drag_enter
         self.bf_file_path.dragMoveEvent = self._drag_move
         self.bf_file_path.dropEvent = self._drop
         drop_layout.addWidget(self.bf_file_path)
 
-        self.bf_move_btn = QPushButton("Move to CS2")
+        self.bf_move_btn = QPushButton(tr("bitfield.move.button"))
         self.bf_move_btn.clicked.connect(self._move_to_cs2)
         drop_layout.addWidget(self.bf_move_btn)
         layout.addLayout(drop_layout)
 
         info_layout = QHBoxLayout()
-        self.lbl_map = QLabel("Map: -")
-        self.lbl_duration = QLabel("Duration: -")
+        self.lbl_map = QLabel(tr("bitfield.map") + " -")
+        self.lbl_duration = QLabel(tr("bitfield.duration") + " -")
         self.lbl_vs = QLabel("VS")
         info_layout.addWidget(self.lbl_map)
         info_layout.addWidget(self.lbl_duration)
         info_layout.addStretch()
-        self.lbl_team_a = QLabel("Team A")
-        self.lbl_team_b = QLabel("Team B")
+        self.lbl_team_a = QLabel(tr("bitfield.team_a"))
+        self.lbl_team_b = QLabel(tr("bitfield.team_b"))
         info_layout.addWidget(self.lbl_team_a, alignment=Qt.AlignmentFlag.AlignRight)
         info_layout.addWidget(self.lbl_vs)
         info_layout.addWidget(self.lbl_team_b)
@@ -252,16 +255,17 @@ class MainWindow(QMainWindow):
         layout.addLayout(teams_layout, stretch=1)
 
         cmd_layout = QHBoxLayout()
-        cmd_layout.addWidget(QLabel("Command:"))
+        self._cmd_label = QLabel(tr("bitfield.command.label"))
+        cmd_layout.addWidget(self._cmd_label)
         self.tb_command = QLineEdit()
         self.tb_command.setReadOnly(True)
         self.tb_command.setObjectName("commandField")
         cmd_layout.addWidget(self.tb_command)
 
-        copy_btn = QPushButton("Copy")
-        copy_btn.setObjectName("primaryButton")
-        copy_btn.clicked.connect(self._copy_command)
-        cmd_layout.addWidget(copy_btn)
+        self._copy_btn = QPushButton(tr("bitfield.copy.button"))
+        self._copy_btn.setObjectName("primaryButton")
+        self._copy_btn.clicked.connect(self._copy_command)
+        cmd_layout.addWidget(self._copy_btn)
         layout.addLayout(cmd_layout)
 
         self.bf_progress = QProgressBar()
@@ -317,7 +321,7 @@ class MainWindow(QMainWindow):
         layout.setSpacing(6)
 
         btn_layout = QHBoxLayout()
-        self.extract_btn = QPushButton("Extract Audio")
+        self.extract_btn = QPushButton(tr("audio.extract.button"))
         self.extract_btn.setObjectName("primaryButton")
         self.extract_btn.clicked.connect(self._extract_audio)
         self.extract_btn.setEnabled(False)
@@ -334,7 +338,8 @@ class MainWindow(QMainWindow):
         lists_layout.setSpacing(8)
 
         left_layout = QVBoxLayout()
-        left_layout.addWidget(QLabel("Players"))
+        self._players_label = QLabel(tr("audio.players.label"))
+        left_layout.addWidget(self._players_label)
         self.player_audio_list = QListWidget()
         self.player_audio_list.setObjectName("audioList")
         self.player_audio_list.currentRowChanged.connect(self._on_player_selected)
@@ -342,7 +347,8 @@ class MainWindow(QMainWindow):
         lists_layout.addLayout(left_layout)
 
         mid_layout = QVBoxLayout()
-        mid_layout.addWidget(QLabel("Voice Files"))
+        self._voices_label = QLabel(tr("audio.voices.label"))
+        mid_layout.addWidget(self._voices_label)
         self.voice_list = QListWidget()
         self.voice_list.setObjectName("audioList")
         self.voice_list.itemDoubleClicked.connect(self._play_selected_audio)
@@ -354,7 +360,8 @@ class MainWindow(QMainWindow):
         lists_layout.addLayout(mid_layout)
 
         right_layout = QVBoxLayout()
-        right_layout.addWidget(QLabel("Saved Voice Files"))
+        self._saved_label2 = QLabel(tr("audio.saved.label"))
+        right_layout.addWidget(self._saved_label2)
         self.saved_voice_list = QListWidget()
         self.saved_voice_list.setObjectName("audioList")
         self.saved_voice_list.itemDoubleClicked.connect(self._play_saved_audio)
@@ -515,18 +522,14 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(12)
 
-        sections = [
-            ("Bitfield-Calc", "Drop a .dem file, select players from the lists, "
-             "copy the generated console command, paste it in CS2 to hear selected players."),
-            ("Match-Results", "After loading a demo, switch to this tab to see "
-             "detailed match statistics for all players."),
-            ("Audio-Player", "Click Extract Audio to extract voice data from the demo. "
-             "Files are organized by player. Double-click to play. Right-click to save."),
-            ("Settings", "Configure dark/light theme, set CS2 demo path, "
-             "manage saved voice files location, and register shell context menu."),
+        self._howto_sections = [
+            (tr("howto.bitfield.title"), tr("howto.bitfield.text")),
+            (tr("howto.match.title"), tr("howto.match.text")),
+            (tr("howto.audio.title"), tr("howto.audio.text")),
+            (tr("howto.settings.title"), tr("howto.settings.text")),
         ]
 
-        for title, text in sections:
+        for title, text in self._howto_sections:
             card = Card(title)
             lbl = QLabel(text)
             lbl.setWordWrap(True)
@@ -1004,6 +1007,18 @@ class MainWindow(QMainWindow):
         self._cs2_browse.setText(tr("settings.paths.browse"))
         self._saved_label.setText(tr("settings.paths.saved"))
         self._saved_browse.setText(tr("settings.paths.browse"))
+        self.bf_move_btn.setText(tr("bitfield.move.button"))
+        self.bf_file_path.setPlaceholderText(tr("bitfield.drop.placeholder"))
+        self.lbl_map.setText(tr("bitfield.map") + " -")
+        self.lbl_duration.setText(tr("bitfield.duration") + " -")
+        self.lbl_team_a.setText(tr("bitfield.team_a"))
+        self.lbl_team_b.setText(tr("bitfield.team_b"))
+        self._cmd_label.setText(tr("bitfield.command.label"))
+        self._copy_btn.setText(tr("bitfield.copy.button"))
+        self.extract_btn.setText(tr("audio.extract.button"))
+        self._players_label.setText(tr("audio.players.label"))
+        self._voices_label.setText(tr("audio.voices.label"))
+        self._saved_label2.setText(tr("audio.saved.label"))
 
     def _check_for_updates(self):
         def check():

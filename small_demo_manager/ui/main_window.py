@@ -89,6 +89,7 @@ class MainWindow(QMainWindow):
         self.demo_path = ""
         self.demo_name = ""
         self._current_player_audio: list[AudioEntry] = []
+        self._selected_player_name: str = ""
         self._parse_worker: Optional[ParseWorker] = None
         self._audio_worker: Optional[AudioExtractWorker] = None
         self.patch_notes_fetched.connect(self._on_patch_notes_fetched)
@@ -348,6 +349,10 @@ class MainWindow(QMainWindow):
         self.extract_btn.clicked.connect(self._extract_audio)
         self.extract_btn.setEnabled(False)
         btn_layout.addWidget(self.extract_btn)
+        self.save_all_btn = QPushButton("Save All Player Audio")
+        self.save_all_btn.setEnabled(False)
+        self.save_all_btn.clicked.connect(self._save_all_player_audio)
+        btn_layout.addWidget(self.save_all_btn)
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
 
@@ -365,6 +370,8 @@ class MainWindow(QMainWindow):
         self.player_audio_list = QListWidget()
         self.player_audio_list.setObjectName("audioList")
         self.player_audio_list.currentRowChanged.connect(self._on_player_selected)
+        self.player_audio_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.player_audio_list.customContextMenuRequested.connect(self._player_audio_context_menu)
         left_layout.addWidget(self.player_audio_list)
         lists_layout.addLayout(left_layout)
 
@@ -829,15 +836,24 @@ class MainWindow(QMainWindow):
         self.extract_btn.setEnabled(True)
         self._snackbar(f"Extraction error: {error_msg}", error=True)
 
+    def _player_audio_context_menu(self, pos):
+        if not self._current_player_audio:
+            return
+        menu = QMenu(self)
+        menu.addAction("Save All Player Audio", lambda: self._save_all_player_audio())
+        menu.exec(self.player_audio_list.viewport().mapToGlobal(pos))
+
     def _on_player_selected(self, row: int):
         if row < 0:
             return
         player_names = sorted(self.audio_entries.keys())
         if row >= len(player_names):
             return
-        name = player_names[row]
-        self._current_player_audio = self.audio_entries[name]
+        self._selected_player_name = player_names[row]
+        self._current_player_audio = self.audio_entries[self._selected_player_name]
         self.voice_list.clear()
+        has_files = len(self._current_player_audio) > 0
+        self.save_all_btn.setEnabled(has_files)
         for entry in self._current_player_audio:
             self.voice_list.addItem(
                 f"Round {entry.round} | {entry.time:.0f}s | {entry.duration:.1f}s"
@@ -861,6 +877,19 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 self._snackbar(f"Playback error: {e}", error=True)
 
+    def _check_saved_path(self) -> bool:
+        saved_path = read("SavedVoiceFilesPath", "")
+        if not saved_path or not os.path.isdir(saved_path):
+            from PyQt6.QtWidgets import QMessageBox
+            reply = QMessageBox.question(
+                self, "Saved Voice Path",
+                "Saved voice files path is not configured.\n\n"
+                "Go to Settings → Paths and set a folder first.",
+                QMessageBox.StandardButton.Ok
+            )
+            return False
+        return True
+
     def _audio_context_menu(self, pos):
         item = self.voice_list.itemAt(pos)
         if not item:
@@ -869,16 +898,34 @@ class MainWindow(QMainWindow):
         if 0 <= idx < len(self._current_player_audio):
             file_path = self._current_player_audio[idx].file_path
             menu = QMenu(self)
-            menu.addAction("Save to Voice Files", lambda: self._save_voice_file(file_path))
+            menu.addAction("Save One Round", lambda: self._save_voice_file(file_path))
+            menu.addAction("Save All Player Audio", lambda: self._save_all_player_audio())
             menu.exec(self.voice_list.viewport().mapToGlobal(pos))
 
     def _save_voice_file(self, source_path: str):
+        if not self._check_saved_path():
+            return
         try:
             afm.copy_to_saved(source_path)
             self._refresh_saved_audio()
             self._snackbar("Saved!")
         except Exception as e:
             self._snackbar(f"Save error: {e}", error=True)
+
+    def _save_all_player_audio(self):
+        if not self._current_player_audio:
+            return
+        if not self._check_saved_path():
+            return
+        saved = 0
+        for entry in self._current_player_audio:
+            try:
+                afm.copy_to_saved(entry.file_path)
+                saved += 1
+            except Exception:
+                continue
+        self._refresh_saved_audio()
+        self._snackbar(f"Saved {saved} files from {self._selected_player_name}!")
 
     def _refresh_saved_audio(self):
         afm.refresh_saved_files()

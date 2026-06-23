@@ -1,90 +1,130 @@
-# 🎧 Small Demo Manager 
+# 🎧 Small Demo Manager
 
-This is a new version of the "[CS2-SourceTV-Demo-Voice-Calculator](https://github.com/pythaeusone/CS2-SourceTV-Demo-Voice-Calculator)"
+> **Python port** — полностью переписан с C# .NET 8 WinForms на Python.
+>
+> Оригинал: [pythaeusone/Small-Demo-Manager](https://github.com/pythaeusone/Small-Demo-Manager)
 
-[![Get it from Microsoft](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/detail/9nkbsbk8rtwp?cid=DevShareMCLPCB)
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
 
----
-
-> [!IMPORTANT]
-> It often happens that Valve changes the demo structure with a CS2 update.
-> 
-> The parser then needs to be updated, and updates take over three days to be released in the MS Store.
-
----
-
-<img width="998" height="496" alt="grafik" src="https://github.com/user-attachments/assets/e898f93c-6650-4311-87ac-8d761ce20ff3" />
-
-
-
-
-## ⚙️ Runtime Requirements
-
-This application requires the **.NET 8.0 Runtime** to be installed on your system.  
-➡️ [Download .NET 8.0 Runtime (Microsoft)](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.15-windows-x64-installer?cid=getdotnetcore)
-
-If the application does not start, make sure this runtime is installed.
+Инструмент для анализа демо-файлов Counter-Strike 2 (.dem).  
+Парсинг статистики матча, извлечение голосового чата (Opus → WAV), расчёт bitfield для `tv_listen_voice_indices`, просмотр результатов и управление демками.
 
 ---
 
-## 🙏 Special Thanks
+## ✨ Возможности
 
-Huge thanks to the following awesome people for testing and feedback:
-- **KEROVSKI**
-- **Throw from cswatch.in Discord**
-- and everyone else :)
-
----
-
-## 🔗 Project and Community Links
-
-- **GitHub project**: [https://github.com/pythaeusone/Small-Demo-Manager](https://github.com/pythaeusone/Small-Demo-Manager)
-
-### 🎮 Community
-
-- **Kerovski Discord**: [https://discord.gg/n26tH9565K](https://discord.gg/n26tH9565K)
-- **@KEROVSKI's Tool Video**: [https://www.youtube.com/watch?v=7vsrbD3xBwM](https://www.youtube.com/watch?v=7vsrbD3xBwM)
-
-- **My Steam**: [https://steamcommunity.com/id/pythaeus/](https://steamcommunity.com/id/pythaeus/)
+- **Парсинг .dem** через `demoparser2` — 10 игроков, точная статистика K/D/A/DMG/HS/MVP, имена команд из FACEIT
+- **Bitfield Calculator** — выбор игроков, генерация `tv_listen_voice_indices <bitfield>; tv_listen_voice_indices_h <bitfield>`, копирование в буфер
+- **Match Results** — таблица на команду: Player, K, D, A, K/D, HS, HS%, MVP, 3K, 4K, 5K, Damage
+- **Audio Extraction** — извлечение Opus-голоса → WAV (48000Hz mono), сегментация по паузам >2с
+- **Audio Player** — проигрывание WAV, список по раундам, прогресс-бар
+- **Audio File Manager** — сохранение отдельных раундов или всего игрока в `Saved-Voice-Files`
+- **Drag-and-drop** — перетаскивание .dem файлов на окно
+- **Shell Integration** — контекстное меню для .dem файлов (реестр Windows)
+- **Контекстные меню игроков** — SteamID64, Steam / cswatch.in / leetify.com / csstats.gg
+- **Тёмная/светлая тема** — Material Design 3 toggle
+- **i18n** — English / Русский язык интерфейса
+- **Move & Rename** — копирование демки в папку CS2 с SHA256 проверкой
 
 ---
 
-## 📦 Used Libraries
+## 🖼️ Скриншоты
 
-- [DemoFile](https://www.nuget.org/packages/DemoFile/)- 
-- [DemoFile.Game.Cs](https://www.nuget.org/packages/DemoFile.Game.Cs)
-- [Concentus](https://www.nuget.org/packages/Concentus)
-- [NAudio](https://www.nuget.org/packages/NAudio)
-- [WindowsAPICodePackCore](https://www.nuget.org/packages/WindowsAPICodePackCore)
-- [WindowsAPICodePackShell](https://www.nuget.org/packages/WindowsAPICodePackShell)
-- [ReaLTaiizor](https://www.nuget.org/packages/ReaLTaiizor)
-
-### 🔁 Transitive Dependencies
-
-- [Google.Protobuf](https://www.nuget.org/packages/Google.Protobuf)  
-- [protobuf-net](https://www.nuget.org/packages/protobuf-net)  
-- [protobuf-net.Core](https://www.nuget.org/packages/protobuf-net.Core)  
-- [Snappier](https://www.nuget.org/packages/Snappier)  
-- [System.Collections.Immutable](https://www.nuget.org/packages/System.Collections.Immutable)
-- All Transitive parts from NAudio.
+| Bitfield-Calc | Match-Results | Audio-Player |
+|---|---|---|
+| *(скоро)* | *(скоро)* | *(скоро)* |
 
 ---
 
-## 📅 ToDo List
+## 📦 Установка
 
-Here's what's next for the project:
+### Зависимости
 
-- Audio Voice Extractor ✔️
-- Audio Voice Player ✔️
-- New GUI Design ✔️
-- Clean up code ✔️
-- Match-Results ✔️
-- Custom Name function ✔️
-- New Parser ⏳
-- Full Match-Details ⏳
-- Find the match lobby using the demo ⏳
-- Video GUIDE ⏳
+```bash
+pip install PyQt6 qt-material demoparser2 opuslib pygame pyperclip
+```
+
+### Запуск
+
+```bash
+cd small_demo_manager
+python main.py
+
+# или с авто-загрузкой демки:
+python main.py "C:\path\to\demo.dem"
+```
 
 ---
 
-> "This software is provided under the MIT License. Commercial use is strictly prohibited."
+## 🏗️ Структура проекта
+
+```
+small_demo_manager/
+├── main.py                 # Точка входа
+├── app.py                  # QApplication + MainWindow
+├── config.py               # JSON конфиг (%LOCALAPPDATA%/Small-Demo-Manager/Config.json)
+├── models.py               # Data-классы (PlayerSnapshot, MatchResult, AudioEntry)
+├── demo_parser.py          # Парсинг .dem через demoparser2
+├── audio_extractor.py      # Opus → WAV
+├── audio_player.py         # WAV плеер (pygame.mixer)
+├── audio_file_manager.py   # Управление сохранёнными файлами
+├── shell_context.py        # Реестр Windows (.dem контекстное меню)
+├── translate.py            # i18n (EN/RU)
+├── locales/                # Translation JSON файлы
+│   ├── en.json
+│   └── ru.json
+├── resources/              # Иконки, opus.dll
+├── ui/
+│   ├── main_window.py      # Главное окно с 7 вкладками
+│   ├── custom_dialog.py    # Диалог переименования демки
+│   └── widgets.py          # Card, IconButton, SectionHeader
+└── requirements.txt
+```
+
+---
+
+## 🧩 Используемые библиотеки
+
+| Библиотека | Назначение |
+|---|---|
+| [PyQt6](https://pypi.org/project/PyQt6/) | GUI framework |
+| [qt-material](https://github.com/UN-GCPDS/qt-material) | Material Design 3 тема |
+| [demoparser2](https://pypi.org/project/demoparser2/) | Парсинг CS2 .dem файлов |
+| [opuslib](https://pypi.org/project/opuslib/) | Opus → PCM декодирование |
+| [pygame](https://pypi.org/project/pygame/) | WAV аудиоплеер + opus.dll |
+| [pyperclip](https://pypi.org/project/pyperclip/) | Буфер обмена |
+
+---
+
+## 🔄 Сравнение с оригиналом (C# .NET)
+
+| Характеристика | C# оригинал | Python порт |
+|---|---|---|
+| Runtime | .NET 8.0 | Python 3.12 |
+| UI | WinForms + ReaLTaiizor | PyQt6 + qt-material |
+| Парсинг .dem | DemoFile (.NET) | demoparser2 (Rust) |
+| Opus декодер | Concentus | opuslib + libopus |
+| Аудиоплеер | NAudio | pygame.mixer |
+| i18n | ❌ | ✅ EN/RU |
+| Платформа | Windows only | Windows (возможно macOS/Linux) |
+
+---
+
+## 📋 Patch Notes
+
+Актуальный список изменений: [PATCH_NOTES.md](PATCH_NOTES.md)  
+(загружается в приложении на вкладке Home)
+
+---
+
+## ❤️ Благодарности
+
+- **pythaeusone** — оригинальный автор Small Demo Manager
+- **KEROVSKI**, **Throw** — тестирование и фидбек
+
+---
+
+## 📜 Лицензия
+
+MIT License. Коммерческое использование запрещено.

@@ -18,7 +18,8 @@ from PyQt6.QtWidgets import (
     QFrame, QTextEdit, QScrollArea
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve
-from PyQt6.QtGui import QAction, QIcon, QFont, QColor, QBrush, QDragEnterEvent, QDropEvent, QPixmap, QGraphicsOpacityEffect
+from PyQt6.QtGui import QAction, QIcon, QFont, QColor, QBrush, QDragEnterEvent, QDropEvent, QPixmap
+from PyQt6.QtWidgets import QGraphicsOpacityEffect
 
 from qt_material import apply_stylesheet
 

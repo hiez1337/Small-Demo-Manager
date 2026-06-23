@@ -33,7 +33,8 @@
 
 A desktop tool that reads Counter-Strike 2 demo files (`.dem`) and gives you:
 
-- **Match statistics** — kills, deaths, assists, headshots, damage, MVPs for all 10 players, sorted the same way as the in-game scoreboard
+- **Match statistics** — kills, deaths, assists, headshots, damage, MVPs for all 10 players, sorted by in-game score
+- **Match timeline** — chronological killfeed per round with weapon, headshot indicator, and round filter
 - **Voice extraction** — pull Opus voice chat out of any SourceTV demo, decode it to WAV, save clips by player
 - **Spectator bitfield** — pick which players you want to hear, get the exact console command to paste into CS2
 - **Audio player** — play back extracted voice clips, grouped by player and round
@@ -47,8 +48,9 @@ No .NET required. No installation. Runs on any Windows machine with Python 3.12.
 
 | Feature | What it does |
 |---|---|
-| **Demo parsing** | Reads `.dem` through `demoparser2` — extracts all 10 players, match score, team names (FACEIT / ESL / any) |
-| **Match stats** | 12-column table per team: Player, K, D, A, K/D, HS, HS%, MVP, 3K, 4K, 5K, Damage |
+| **Demo parsing** | Reads `.dem` through `demoparser2` — extracts all 10 players, match score, team names (FACEIT / ESL / any), duration |
+| **Match stats** | 12-column table per team: Player, K, D, A, K/D, HS, HS%, MVP, 3K, 4K, 5K, Damage. Sorted by in-game score |
+| **Match timeline** | Chronological killfeed per round. Shows attacker, weapon, victim, headshot status. Filter by round |
 | **Spectator bitfield** | Checkboxes → `1 << (slot-1)` → `tv_listen_voice_indices` command. Copy and paste into CS2 console |
 | **Voice extraction** | Opus → WAV decoding via `opuslib` + `libopus`. Segmented by silence (>2s gaps), grouped by player |
 | **Audio player** | WAV playback with `pygame`. Per-player playlist, per-round files, double-click to play |
@@ -103,9 +105,10 @@ The `.exe` ends up in `dist/SmallDemoManager.exe`.
 
 1. **Open a demo** — drag a `.dem` file onto the window or use the file dialog
 2. **See match stats** — switch to the Stats tab. Players are sorted by score, just like TAB in-game
-3. **Set up spectator** — go to the Spectator tab, check the players you want to hear, copy the command
-4. **Extract voice** — switch to Voice, click "Extract Voice". Wait for the progress bar
-5. **Play clips** — select a player, double-click any clip. Right-click to save one or all
+3. **Browse kills** — Timeline tab shows every kill chronologically. Filter by round to see who killed who
+4. **Set up spectator** — go to the Spectator tab, check the players you want to hear, copy the command
+5. **Extract voice** — switch to Voice, click "Extract Voice". Wait for the progress bar
+6. **Play clips** — select a player, double-click any clip. Right-click to save one or all
 
 ---
 
@@ -190,7 +193,8 @@ MIT — commercial use is prohibited.
 
 **Что умеет:**
 
-- **Статистика матча** — убийства, смерти, помощи, хедшоты, урон, MVP для всех 10 игроков. Сортировка как в игре (по очкам)
+- **Статистика матча** — убийства, смерти, помощи, хедшоты, урон, MVP для всех 10 игроков. Сортировка по очкам как в игре
+- **Лента матча** — хронология убийств по раундам с оружием, хедшотами и фильтром по раунду
 - **Извлечение голоса** — достаёт Opus-голосовой чат из SourceTV демок, декодирует в WAV, группирует по игрокам
 - **Bitfield для спектатора** — выбираешь игроков, приложение генерирует `tv_listen_voice_indices` — копируешь и вставляешь в консоль CS2
 - **Аудиоплеер** — проигрывание WAV, список по раундам, двойной клик для воспроизведения
@@ -202,8 +206,9 @@ MIT — commercial use is prohibited.
 
 | Функция | Как работает |
 |---|---|
-| **Парсинг демок** | `demoparser2` читает `.dem` — 10 игроков, счёт, названия команд (FACEIT, ESL, любые) |
-| **Статистика** | 12 колонок на команду: Игрок, У, С, П, У/С, HS, HS%, MVP, 3К, 4К, 5К, Урон |
+| **Парсинг демок** | `demoparser2` читает `.dem` — 10 игроков, счёт, длительность, названия команд (FACEIT, ESL, любые) |
+| **Статистика** | 12 колонок на команду: Игрок, У, С, П, У/С, HS, HS%, MVP, 3К, 4К, 5К, Урон. Сортировка по очкам |
+| **Лента матча** | Все убийства по раундам: атакующий, оружие, жертва, хедшот. Фильтр по раунду |
 | **Bitfield** | Чекбоксы → `1 << (slot-1)` → `tv_listen_voice_indices`. Скопировал — вставил в CS2 |
 | **Голос** | Opus → WAV. Демка разбивается на фрагменты по паузам >2с. Всё сгруппировано по игрокам |
 | **Плеер** | `pygame`. Выбрал игрока — показаны его файлы. Двойной клик — воспроизведение. Правый клик — сохранение |
@@ -258,7 +263,8 @@ pyinstaller --onefile --name "SmallDemoManager" --distpath dist `
 
 1. **Загрузи демку** — перетащи `.dem` в окно или нажми «Открыть демку»
 2. **Смотри статистику** — вкладка «Статистика». Игроки отсортированы по очкам, как в игре
-3. **Настрой спектатора** — вкладка «Спектатор», отметь кого хочешь слышать, скопируй команду
+3. **Листай ленту убийств** — вкладка «Лента». Все убийства по раундам с фильтром
+4. **Настрой спектатора** — вкладка «Спектатор», отметь кого хочешь слышать, скопируй команду
 4. **Извлеки голос** — вкладка «Голос», нажми «Извлечь голос», подожди
 5. **Слушай** — выбери игрока, двойной клик по файлу. Правый клик — сохранить
 

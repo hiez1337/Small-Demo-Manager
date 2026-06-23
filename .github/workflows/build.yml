@@ -57,4 +57,25 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: dist/SmallDemoManager.exe
-          generate_release_notes: true
+          body: |
+            ## What's new in v2.0.1
+
+            **🇬🇧 English**
+            - **Timeline tab** — chronological killfeed for all rounds. Filter by round to see who killed who, with what weapon, headshots
+            - **Match duration** — now displays correctly (MM:SS) in the Spectator tab
+            - **i18n improvements** — all UI texts rewritten for clarity, new translations for Timeline tab
+            - **Accessibility** — fixed color contrast for WCAG AA compliance (accent buttons, borders, secondary text)
+            - **Player sorting** — match stats are now sorted by in-game score (same order as TAB in CS2)
+            - **Fixed leetify.com URL** — now opens the correct profile page
+            - **UI polish** — tab fade animation, design tokens system, consistent spacing and borders
+            - **Bilingual README** — full English and Russian documentation with collapsible sections
+
+            **🇷🇺 Русский**
+            - **Вкладка Timeline** — лента убийств по раундам. Фильтр по раунду, оружие, хедшоты
+            - **Длительность матча** — теперь отображается корректно (ММ:СС)
+            - **Улучшен перевод** — все тексты интерфейса переписаны, добавлены переводы для Timeline
+            - **Доступность** — исправлен контраст цветов для WCAG AA
+            - **Сортировка игроков** — статистика сортируется по очкам как в игре
+            - **Исправлен URL leetify.com** — открывается правильная страница профиля
+            - **Полировка UI** — анимация переключения вкладок, система дизайн-токенов
+            - **Двуязычный README** — английская и русская документация

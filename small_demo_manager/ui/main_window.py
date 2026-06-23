@@ -37,7 +37,7 @@ CURRENT_VERSION = "1.0.8"
 
 
 class ParseWorker(QThread):
-    finished = pyqtSignal(list, object)
+    finished = pyqtSignal(list, object, bool)
     error = pyqtSignal(str)
 
     def __init__(self, file_path: str):
@@ -48,7 +48,7 @@ class ParseWorker(QThread):
         try:
             parser = CS2DemoParser(self.file_path)
             snapshots, match_result = parser.parse()
-            self.finished.emit(snapshots, match_result)
+            self.finished.emit(snapshots, match_result, parser.is_sourcetv)
         except Exception as e:
             self.error.emit(str(e))
 
@@ -622,7 +622,7 @@ class MainWindow(QMainWindow):
         self._parse_worker.error.connect(self._on_demo_error)
         self._parse_worker.start()
 
-    def _on_demo_parsed(self, snapshots: list[PlayerSnapshot], match_result: MatchResult):
+    def _on_demo_parsed(self, snapshots: list[PlayerSnapshot], match_result: MatchResult, is_sourcetv: bool = False):
         self.bf_progress.setVisible(False)
         self.snapshots = snapshots
         self.match_result = match_result
@@ -640,7 +640,7 @@ class MainWindow(QMainWindow):
 
         self.extract_btn.setEnabled(True)
 
-        if parser.is_sourcetv:
+        if is_sourcetv:
             self._snackbar("Demo loaded successfully!")
         else:
             self._snackbar("Demo loaded. Voice extraction may be limited (not SourceTV).")

@@ -1058,17 +1058,21 @@ class MainWindow(QMainWindow):
 
     def _fetch_patch_notes(self):
         def fetch():
-            try:
-                req = Request(PATCH_NOTES_URL, headers={"User-Agent": "Small-Demo-Manager"})
-                with urlopen(req, timeout=10) as resp:
-                    text = resp.read().decode("utf-8")
-                    self.patch_notes_fetched.emit(text.strip())
-            except Exception:
-                self.patch_notes_fetched.emit("v1.0.8\n- Initial Python port\n- Full Material Design 3 UI\n- CS2 demo parsing with demoparser2\n- Opus voice extraction\n- Audio playback\n- Bitfield calculator\n- Match results")
+            for attempt in range(3):
+                try:
+                    req = Request(PATCH_NOTES_URL, headers={"User-Agent": "Small-Demo-Manager"})
+                    with urlopen(req, timeout=10) as resp:
+                        text = resp.read().decode("utf-8")
+                        if text.strip():
+                            self.patch_notes_fetched.emit(text.strip())
+                            return
+                except Exception:
+                    continue
         threading.Thread(target=fetch, daemon=True).start()
 
     def _on_patch_notes_fetched(self, text: str):
-        self.patch_notes.setPlainText(text)
+        if text and text != self.patch_notes.toPlainText():
+            self.patch_notes.setPlainText(text)
 
     def _on_lang_btn_clicked(self, code: str):
         if code == self._tr.current_language:

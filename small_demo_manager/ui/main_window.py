@@ -928,9 +928,9 @@ class MainWindow(QMainWindow):
                 req = Request(PATCH_NOTES_URL, headers={"User-Agent": "Small-Demo-Manager"})
                 with urlopen(req, timeout=10) as resp:
                     text = resp.read().decode("utf-8")
-                    self.patch_notes.setPlainText(text.strip())
+                    QTimer.singleShot(0, lambda: self.patch_notes.setPlainText(text.strip()))
             except Exception:
-                self.patch_notes.setPlainText("v1.0.8\n- Initial Python port\n- Full Material Design 3 UI\n- CS2 demo parsing with demoparser2\n- Opus voice extraction\n- Audio playback\n- Bitfield calculator\n- Match results")
+                QTimer.singleShot(0, lambda: self.patch_notes.setPlainText("v1.0.8\n- Initial Python port\n- Full Material Design 3 UI\n- CS2 demo parsing with demoparser2\n- Opus voice extraction\n- Audio playback\n- Bitfield calculator\n- Match results"))
         threading.Thread(target=fetch, daemon=True).start()
 
     def _check_for_updates(self):
@@ -946,7 +946,7 @@ class MainWindow(QMainWindow):
                     latest_ver = re.sub(r"[^\d.]", "", latest)
                     current_ver = CURRENT_VERSION
                     if self._compare_versions(latest_ver, current_ver) > 0:
-                        self._snackbar(f"Update available: {latest}")
+                        QTimer.singleShot(0, lambda: self._snackbar(f"Update available: {latest}"))
             except Exception:
                 pass
 

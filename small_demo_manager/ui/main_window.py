@@ -808,8 +808,14 @@ class MainWindow(QMainWindow):
     # ─── Match Results ─────────────────────────────────────────
 
     def _load_match_results(self):
-        team_a = [s for s in self.snapshots if s.team_number == 3]
-        team_b = [s for s in self.snapshots if s.team_number == 2]
+        team_a = sorted(
+            [s for s in self.snapshots if s.team_number == 3],
+            key=lambda s: s.player_score, reverse=True
+        )
+        team_b = sorted(
+            [s for s in self.snapshots if s.team_number == 2],
+            key=lambda s: s.player_score, reverse=True
+        )
 
         if self.match_result:
             self.match_header_a.setText(

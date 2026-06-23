@@ -145,6 +145,7 @@ class CS2DemoParser:
                 four_k=0,
                 five_k=0,
                 end_score=end_score,
+                player_score=score_val,
                 spec_id=0,
             ))
 

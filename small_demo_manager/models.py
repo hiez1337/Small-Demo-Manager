@@ -20,6 +20,7 @@ class PlayerSnapshot:
     five_k: int
     end_score: int
     spec_id: int = 0
+    player_score: int = 0
 
 
 @dataclass

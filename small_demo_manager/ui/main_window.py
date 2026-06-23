@@ -695,26 +695,23 @@ class MainWindow(QMainWindow):
         self.team_a_list.clear()
         self.team_b_list.clear()
 
-        spec_id = 1
-        for snap in self.snapshots:
+        for snap in sorted(self.snapshots, key=lambda s: s.spec_id):
             if snap.team_number == 3:
-                item = QListWidgetItem(f"{snap.player_name} (ID: {spec_id})")
+                item = QListWidgetItem(f"{snap.player_name} (sl:{snap.spec_id})")
                 item.setData(Qt.ItemDataRole.UserRole, snap.steam_id)
-                item.setData(Qt.ItemDataRole.UserRole + 1, spec_id)
+                item.setData(Qt.ItemDataRole.UserRole + 1, snap.spec_id)
                 item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                 item.setCheckState(Qt.CheckState.Unchecked)
                 self.team_a_list.addItem(item)
-                spec_id += 1
 
-        for snap in self.snapshots:
+        for snap in sorted(self.snapshots, key=lambda s: s.spec_id):
             if snap.team_number == 2:
-                item = QListWidgetItem(f"{snap.player_name} (ID: {spec_id})")
+                item = QListWidgetItem(f"{snap.player_name} (sl:{snap.spec_id})")
                 item.setData(Qt.ItemDataRole.UserRole, snap.steam_id)
-                item.setData(Qt.ItemDataRole.UserRole + 1, spec_id)
+                item.setData(Qt.ItemDataRole.UserRole + 1, snap.spec_id)
                 item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                 item.setCheckState(Qt.CheckState.Unchecked)
                 self.team_b_list.addItem(item)
-                spec_id += 1
 
         self._setup_player_context_menu(self.team_a_list)
         self._setup_player_context_menu(self.team_b_list)

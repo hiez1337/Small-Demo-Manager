@@ -1,0 +1,6 @@
+PyQt6>=6.5.0
+qt-material>=2.14
+demoparser2>=0.41.3
+opuslib>=3.0.0
+pygame>=2.5.0
+pyperclip>=1.8.2

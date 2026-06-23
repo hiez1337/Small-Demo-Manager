@@ -37,3 +37,15 @@ class AudioEntry:
     time: float
     duration: float
     file_path: str
+
+
+@dataclass
+class KillEvent:
+    round: int
+    tick: int
+    attacker: str
+    victim: str
+    weapon: str
+    headshot: bool
+    attacker_steamid: int
+    time_seconds: float

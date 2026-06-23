@@ -5,6 +5,7 @@
     "tab.home": "Home",
     "tab.bitfield": "Spectator",
     "tab.match": "Stats",
+    "tab.timeline": "Timeline",
     "tab.audio": "Voice",
     "tab.settings": "Settings",
     "tab.about": "About",
@@ -80,6 +81,8 @@
     "howto.match.text": "After loading a demo, switch here to see kills, deaths, assists, headshots, damage, MVPs, and multi-kill rounds for every player.",
     "howto.audio.title": "Voice Extraction",
     "howto.audio.text": "Click Extract Voice to pull voice chat from the demo. Files are organized by player. Double-click a clip to play it. Right-click to save it.",
+    "howto.timeline.title": "Match Timeline",
+    "howto.timeline.text": "Every kill from the match, sorted by round. Filter by round to see who killed who, with what weapon, and whether it was a headshot.",
     "howto.settings.title": "Settings",
     "howto.settings.text": "Switch between dark and light themes, set your CS2 demo folder, choose where to save voice clips, and add the .dem context menu to Windows.",
 

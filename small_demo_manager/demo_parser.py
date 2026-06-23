@@ -4,7 +4,7 @@ from typing import Optional
 from demoparser2 import DemoParser
 import pandas as pd
 
-from models import PlayerSnapshot, MatchResult
+from models import PlayerSnapshot, MatchResult, KillEvent
 
 
 def _has_data(result) -> bool:
@@ -51,7 +51,7 @@ class CS2DemoParser:
                 return int(re["tick"].max())
         return 0
 
-    def parse(self) -> tuple[list[PlayerSnapshot], MatchResult]:
+    def parse(self) -> tuple[list[PlayerSnapshot], MatchResult, list[KillEvent]]:
         header = self._parser.parse_header()
         self.map_name = header.get("map_name", "Unknown")
         self.is_sourcetv = "sourcetv" in header.get("client_name", "").lower()
@@ -63,6 +63,10 @@ class CS2DemoParser:
         last_tick = self._get_last_tick()
         if last_tick == 0:
             raise ValueError("No round_end events found in demo")
+        self.duration = last_tick / 64  # 64 ticks/sec in CS2
+
+        round_starts = self._parser.parse_event("round_start")
+        round_starts = round_starts[round_starts["tick"].notna()] if _has_data(round_starts) else None
 
         stats_df = self._parser.parse_ticks(PLAYER_STATS, ticks=[last_tick])
         team_df = self._parser.parse_ticks(TEAM_STATS, ticks=[last_tick])
@@ -153,6 +157,33 @@ class CS2DemoParser:
         for snap in snapshots:
             snap.spec_id = pi_order.index(snap.steam_id) + 1
 
+        killfeed: list[KillEvent] = []
+        death_events = self._parser.parse_event("player_death")
+        if _has_data(death_events):
+            for _, row in death_events.iterrows():
+                try:
+                    tick = int(row.get("tick", 0))
+                    att = str(row.get("attacker_name", ""))
+                    vic = str(row.get("user_name", ""))
+                    wep = str(row.get("weapon", ""))
+                    hs = bool(row.get("headshot", False))
+                    aid = int(row.get("attacker_steamid", 0)) if pd.notna(row.get("attacker_steamid")) else 0
+                    rnd = 0
+                    if _has_data(round_starts):
+                        rnd = int(round_starts[round_starts["tick"] <= tick]["round"].max()) if not round_starts.empty else 0
+                    killfeed.append(KillEvent(
+                        round=rnd,
+                        tick=tick,
+                        attacker=att,
+                        victim=vic,
+                        weapon=wep,
+                        headshot=hs,
+                        attacker_steamid=aid,
+                        time_seconds=(tick - 1) / 64,
+                    ))
+                except (ValueError, TypeError):
+                    continue
+
         match_result = MatchResult(
             team_a_score=team_scores.get(3, 0),
             team_b_score=team_scores.get(2, 0),
@@ -160,4 +191,4 @@ class CS2DemoParser:
             team_b_name=team_names.get(2, "Terrorists"),
         )
 
-        return snapshots, match_result
+        return snapshots, match_result, killfeed

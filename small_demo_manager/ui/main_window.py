@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
     QLabel, QPushButton, QLineEdit, QListWidget, QListWidgetItem,
     QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox,
-    QProgressBar, QFileDialog, QMessageBox, QMenu, QSizePolicy,
+    QProgressBar, QFileDialog, QMessageBox, QMenu, QSizePolicy, QComboBox,
     QFrame, QTextEdit, QScrollArea
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve
@@ -51,11 +51,12 @@ _TAB_ICONS = {
     "settings": os.path.join(_RES_DIR, "settingsNew.png"),
     "about": os.path.join(_RES_DIR, "aboutNew.png"),
     "howto": os.path.join(_RES_DIR, "howTo2New.png"),
+    "timeline": os.path.join(_RES_DIR, "guideNew.png"),
 }
 
 
 class ParseWorker(QThread):
-    finished = pyqtSignal(list, object, bool)
+    finished = pyqtSignal(list, object, bool, float, list)
     error = pyqtSignal(str)
 
     def __init__(self, file_path: str):
@@ -65,8 +66,8 @@ class ParseWorker(QThread):
     def run(self):
         try:
             parser = CS2DemoParser(self.file_path)
-            snapshots, match_result = parser.parse()
-            self.finished.emit(snapshots, match_result, parser.is_sourcetv)
+            snapshots, match_result, killfeed = parser.parse()
+            self.finished.emit(snapshots, match_result, parser.is_sourcetv, parser.duration, killfeed)
         except Exception as e:
             self.error.emit(str(e))
 
@@ -145,14 +146,15 @@ class MainWindow(QMainWindow):
         self.tab_home = self._create_home_tab()
         self.tab_bitfield = self._create_bitfield_tab()
         self.tab_match = self._create_match_tab()
+        self.tab_timeline = self._create_timeline_tab()
         self.tab_audio = self._create_audio_tab()
         self.tab_settings = self._create_settings_tab()
         self.tab_about = self._create_about_tab()
         self.tab_howto = self._create_howto_tab()
 
-        icon_keys = ["home", "calc", "match", "audio", "settings", "about", "howto"]
-        tab_keys = ["tab.home", "tab.bitfield", "tab.match", "tab.audio", "tab.settings", "tab.about", "tab.howto"]
-        tabs = [self.tab_home, self.tab_bitfield, self.tab_match, self.tab_audio, self.tab_settings, self.tab_about, self.tab_howto]
+        icon_keys = ["home", "calc", "match", "timeline", "audio", "settings", "about", "howto"]
+        tab_keys = ["tab.home", "tab.bitfield", "tab.match", "tab.timeline", "tab.audio", "tab.settings", "tab.about", "tab.howto"]
+        tabs = [self.tab_home, self.tab_bitfield, self.tab_match, self.tab_timeline, self.tab_audio, self.tab_settings, self.tab_about, self.tab_howto]
         for i, tab in enumerate(tabs):
             icon_path = _TAB_ICONS[icon_keys[i]]
             icon = QIcon(QPixmap(icon_path)) if os.path.isfile(icon_path) else QIcon()
@@ -390,6 +392,66 @@ class MainWindow(QMainWindow):
         table.verticalHeader().setVisible(False)
         table.setAlternatingRowColors(True)
 
+    # ─── Timeline Tab ──────────────────────────────────────────
+
+    def _create_timeline_tab(self) -> QWidget:
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
+
+        header_row = QHBoxLayout()
+        header_row.addWidget(QLabel(tr("tab.timeline")))
+        header_row.addStretch()
+        self.tl_round_combo = QComboBox()
+        self.tl_round_combo.setMinimumWidth(120)
+        self.tl_round_combo.currentIndexChanged.connect(self._filter_timeline)
+        header_row.addWidget(QLabel("Round:"))
+        header_row.addWidget(self.tl_round_combo)
+        layout.addLayout(header_row)
+
+        self.tl_table = QTableWidget()
+        self.tl_table.setObjectName("timelineTable")
+        cols = ["Round", "Time", "Attacker", "Weapon", "Victim", "HS"]
+        self.tl_table.setColumnCount(len(cols))
+        self.tl_table.setHorizontalHeaderLabels(cols)
+        self.tl_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tl_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.tl_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.tl_table.verticalHeader().setVisible(False)
+        self.tl_table.setAlternatingRowColors(True)
+        layout.addWidget(self.tl_table)
+
+        return tab
+
+    def _load_killfeed(self, killfeed: list):
+        self._killfeed = killfeed
+        self.tl_round_combo.blockSignals(True)
+        self.tl_round_combo.clear()
+        self.tl_round_combo.addItem("All", -1)
+        rounds = sorted(set(k.round for k in killfeed))
+        for r in rounds:
+            self.tl_round_combo.addItem(f"Round {r}", r)
+        self.tl_round_combo.blockSignals(False)
+        self._filter_timeline()
+
+    def _filter_timeline(self):
+        target = self.tl_round_combo.currentData()
+        if target is None:
+            return
+        filtered = [k for k in self._killfeed if target == -1 or k.round == target]
+        self.tl_table.setRowCount(len(filtered))
+        for row, k in enumerate(filtered):
+            mins = int(k.time_seconds // 60)
+            secs = int(k.time_seconds % 60)
+            hs = "HS" if k.headshot else ""
+            self.tl_table.setItem(row, 0, QTableWidgetItem(str(k.round)))
+            self.tl_table.setItem(row, 1, QTableWidgetItem(f"{mins}:{secs:02d}"))
+            self.tl_table.setItem(row, 2, QTableWidgetItem(k.attacker))
+            self.tl_table.setItem(row, 3, QTableWidgetItem(k.weapon))
+            self.tl_table.setItem(row, 4, QTableWidgetItem(k.victim))
+            self.tl_table.setItem(row, 5, QTableWidgetItem(hs))
+
     # ─── Audio-Player Tab ──────────────────────────────────────
 
     def _create_audio_tab(self) -> QWidget:
@@ -613,6 +675,7 @@ class MainWindow(QMainWindow):
         self._howto_sections = [
             (tr("howto.bitfield.title"), tr("howto.bitfield.text")),
             (tr("howto.match.title"), tr("howto.match.text")),
+            (tr("howto.timeline.title"), tr("howto.timeline.text")),
             (tr("howto.audio.title"), tr("howto.audio.text")),
             (tr("howto.settings.title"), tr("howto.settings.text")),
         ]
@@ -688,18 +751,18 @@ class MainWindow(QMainWindow):
         self._parse_worker.error.connect(self._on_demo_error)
         self._parse_worker.start()
 
-    def _on_demo_parsed(self, snapshots: list[PlayerSnapshot], match_result: MatchResult, is_sourcetv: bool = False):
+    def _on_demo_parsed(self, snapshots: list[PlayerSnapshot], match_result: MatchResult, is_sourcetv: bool = False, duration: float = 0, killfeed: list = None):
         self.bf_progress.setVisible(False)
         self.snapshots = snapshots
         self.match_result = match_result
         self._load_bitfield()
         self._load_match_results()
+        self._load_killfeed(killfeed or [])
 
-        team_a = [s for s in snapshots if s.team_number == 3]
-        team_b = [s for s in snapshots if s.team_number == 2]
-
+        mins = int(duration // 60)
+        secs = int(duration % 60)
         self.lbl_map.setText(f"Map: {snapshots[0].team_name if snapshots else '-'}")
-        self.lbl_duration.setText(f"Duration: -")
+        self.lbl_duration.setText(f"{tr('bitfield.duration')} {mins}:{secs:02d}")
         self.lbl_team_a.setText(match_result.team_a_name)
         self.lbl_team_b.setText(match_result.team_b_name)
         self.lbl_vs.setText(f"({match_result.team_a_score}:{match_result.team_b_score})")
@@ -1127,8 +1190,8 @@ class MainWindow(QMainWindow):
     def _retranslate(self):
         self.setWindowTitle(tr("app.title"))
         tab_keys = [
-            "tab.home", "tab.bitfield", "tab.match", "tab.audio",
-            "tab.settings", "tab.about", "tab.howto",
+            "tab.home", "tab.bitfield", "tab.match", "tab.timeline",
+            "tab.audio", "tab.settings", "tab.about", "tab.howto",
         ]
         for i, key in enumerate(tab_keys):
             self.tabs.setTabText(i, tr(key))

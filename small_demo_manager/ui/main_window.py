@@ -17,8 +17,8 @@ from PyQt6.QtWidgets import (
     QProgressBar, QFileDialog, QMessageBox, QMenu, QSizePolicy,
     QFrame, QTextEdit, QScrollArea
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
-from PyQt6.QtGui import QAction, QIcon, QFont, QColor, QBrush, QDragEnterEvent, QDropEvent, QPixmap
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve
+from PyQt6.QtGui import QAction, QIcon, QFont, QColor, QBrush, QDragEnterEvent, QDropEvent, QPixmap, QGraphicsOpacityEffect
 
 from qt_material import apply_stylesheet
 
@@ -30,6 +30,7 @@ import audio_file_manager as afm
 from config import read, write, key_exists
 from translate import tr, get_translator
 from ui.widgets import Card, IconButton, SectionHeader, ClickableLabel
+from tokens import TOKENS
 
 
 GITHUB_REPO = "https://api.github.com/repos/pythaeusone/Faceit-Demo-Voice-Calculator/releases"
@@ -107,6 +108,7 @@ class MainWindow(QMainWindow):
         self._selected_player_name: str = ""
         self._parse_worker: Optional[ParseWorker] = None
         self._audio_worker: Optional[AudioExtractWorker] = None
+        self._tab_anim: Optional[QPropertyAnimation] = None
         self.patch_notes_fetched.connect(self._on_patch_notes_fetched)
         self.update_available.connect(lambda msg: self._snackbar(msg))
         self._tr = get_translator()
@@ -135,6 +137,7 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.setObjectName("mainTabs")
         self.tabs.setTabPosition(QTabWidget.TabPosition.North)
+        self.tabs.currentChanged.connect(self._animate_tab_fade)
         main_layout.addWidget(self.tabs)
 
         self.tab_home = self._create_home_tab()
@@ -158,68 +161,59 @@ class MainWindow(QMainWindow):
         apply_stylesheet(self._app_ref, theme=theme)
         ss = self._app_ref.styleSheet()
 
-        if self._is_dark:
-            accent_btn = "#1565C0"
-            accent_light = "#64B5F6"
-            bg_btn = "#2A2A2A"
-            text_primary = "#E0E0E0"
-            text_on_accent = "#FFFFFF"
-            border_def = "#666666"
-            indicator_bg = "#3A3A3A"
-        else:
-            accent_btn = "#1565C0"
-            accent_light = "#42A5F5"
-            bg_btn = "#E0E0E0"
-            text_primary = "#212121"
-            text_on_accent = "#FFFFFF"
-            border_def = "#757575"
-            indicator_bg = "#FFFFFF"
+        c = TOKENS.light_colors if not self._is_dark else TOKENS.colors
+        t = TOKENS.typography
+        s = TOKENS.spacing
+        b = TOKENS.borders
 
         btn_style = f"""
         QPushButton {{
-            text-align: center; padding: 6px 18px; border-radius: 6px;
-            font-size: 13px; min-width: 90px;
+            text-align: center; padding: {s.sm} {s.lg}; border-radius: {b.radius_md};
+            font-size: {t.size_base}; font-family: {t.font_family};
+            min-width: 90px;
         }}
         QPushButton#langBtn:checked {{
-            background-color: {accent_btn}; color: {text_on_accent};
-            border: 1px solid {accent_btn}; font-weight: bold;
+            background-color: {c.accent_button}; color: {c.text_on_accent};
+            border: {b.width_default} solid {c.accent_button}; font-weight: {t.weight_bold};
         }}
         QPushButton#langBtn:!checked {{
-            background-color: {bg_btn}; color: {text_primary};
-            border: 1px solid {border_def};
+            background-color: {c.surface_card}; color: {c.text_primary};
+            border: {b.width_default} solid {c.border};
         }}
         QPushButton#langBtn:!checked:hover {{
-            border: 1px solid {accent_light};
+            border: {b.width_default} solid {c.accent_light};
         }}
         QPushButton#primaryButton {{
-            background-color: {accent_btn}; color: {text_on_accent};
-            border: 1px solid {accent_btn}; font-weight: bold;
-            padding: 6px 24px;
+            background-color: {c.accent_button}; color: {c.text_on_accent};
+            border: {b.width_default} solid {c.accent_button}; font-weight: {t.weight_bold};
+            padding: {s.sm} {s.xl};
         }}
         QPushButton#primaryButton:hover {{
-            background-color: #0D47A1;
+            background-color: {c.accent_hover};
         }}
         """
         ss += btn_style
-        ss += btn_style
         ss += f"""
-        QListWidget::item {{ padding: 4px 8px; }}
-        QListWidget::item:checked {{ background-color: rgba(21, 101, 192, 0.15); }}
+        QListWidget::item {{ padding: {s.xs} {s.sm}; }}
+        QListWidget::item:checked {{ background-color: {c.selection_bg}; }}
         QListWidget::indicator {{
             width: 16px; height: 16px;
-            border: 2px solid {border_def};
-            border-radius: 3px; background: {indicator_bg};
-            margin-right: 6px;
+            border: {b.width_focus} solid {c.border};
+            border-radius: {b.radius_sm}; background: {c.indicator_bg};
+            margin-right: {s.sm};
         }}
         QListWidget::indicator:checked {{
-            background: {accent_btn}; border: 2px solid {accent_btn};
+            background: {c.accent_button}; border: {b.width_focus} solid {c.accent_button};
         }}
         QListWidget::indicator:hover {{
-            border: 2px solid {accent_light};
+            border: {b.width_focus} solid {c.accent_light};
         }}
         QLineEdit#dropField, QLineEdit#commandField {{
-            border: 1px solid {border_def}; border-radius: 4px;
-            padding: 4px 8px;
+            border: {b.width_default} solid {c.border}; border-radius: {b.radius_md};
+            padding: {s.xs} {s.sm}; font-family: {t.font_family};
+        }}
+        QStatusBar {{
+            font-size: {t.size_sm}; color: {c.text_secondary};
         }}
         """
         self._app_ref.setStyleSheet(ss)
@@ -1108,6 +1102,19 @@ class MainWindow(QMainWindow):
             btn.setChecked(c == code)
         self._tr.load(code)
         write("Language", code)
+
+    def _animate_tab_fade(self, index: int):
+        widget = self.tabs.widget(index)
+        if not widget:
+            return
+        effect = QGraphicsOpacityEffect(widget)
+        widget.setGraphicsEffect(effect)
+        self._tab_anim = QPropertyAnimation(effect, b"opacity")
+        self._tab_anim.setDuration(150)
+        self._tab_anim.setStartValue(0.6)
+        self._tab_anim.setEndValue(1.0)
+        self._tab_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._tab_anim.start()
 
     def _retranslate(self):
         self.setWindowTitle(tr("app.title"))

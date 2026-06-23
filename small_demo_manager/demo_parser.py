@@ -148,14 +148,9 @@ class CS2DemoParser:
                 spec_id=0,
             ))
 
-        team_a_steamids = [s for s in pi_map if pi_map[s][1] == 3]
-        team_b_steamids = [s for s in pi_map if pi_map[s][1] == 2]
-
-        for idx, snap in enumerate(snapshots):
-            if snap.team_number == 3:
-                snap.spec_id = team_a_steamids.index(snap.steam_id) + 1
-            else:
-                snap.spec_id = team_b_steamids.index(snap.steam_id) + 6
+        pi_order = list(pi_map.keys())
+        for snap in snapshots:
+            snap.spec_id = pi_order.index(snap.steam_id) + 1
 
         match_result = MatchResult(
             team_a_score=team_scores.get(3, 0),

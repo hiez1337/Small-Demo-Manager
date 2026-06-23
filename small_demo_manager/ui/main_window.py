@@ -158,44 +158,69 @@ class MainWindow(QMainWindow):
         apply_stylesheet(self._app_ref, theme=theme)
         ss = self._app_ref.styleSheet()
 
-        accent = "#64B5F6" if self._is_dark else "#1976D2"
-        bg = "#2A2A2A" if self._is_dark else "#E0E0E0"
-        text = "#FFFFFF" if self._is_dark else "#212121"
-        border = "#555555" if self._is_dark else "#BDBDBD"
+        if self._is_dark:
+            accent_btn = "#1565C0"
+            accent_light = "#64B5F6"
+            bg_btn = "#2A2A2A"
+            text_primary = "#E0E0E0"
+            text_on_accent = "#FFFFFF"
+            border_def = "#666666"
+            indicator_bg = "#3A3A3A"
+        else:
+            accent_btn = "#1565C0"
+            accent_light = "#42A5F5"
+            bg_btn = "#E0E0E0"
+            text_primary = "#212121"
+            text_on_accent = "#FFFFFF"
+            border_def = "#757575"
+            indicator_bg = "#FFFFFF"
 
         btn_style = f"""
         QPushButton {{
             text-align: center; padding: 6px 18px; border-radius: 6px;
             font-size: 13px; min-width: 90px;
         }}
-        QPushButton:checked {{
-            background-color: {accent}; color: #FFFFFF;
-            border: 1px solid {accent}; font-weight: bold;
+        QPushButton#langBtn:checked {{
+            background-color: {accent_btn}; color: {text_on_accent};
+            border: 1px solid {accent_btn}; font-weight: bold;
         }}
-        QPushButton:!checked {{
-            background-color: {bg}; color: {text};
-            border: 1px solid {border};
+        QPushButton#langBtn:!checked {{
+            background-color: {bg_btn}; color: {text_primary};
+            border: 1px solid {border_def};
         }}
-        QPushButton:!checked:hover {{
-            border: 1px solid {accent};
+        QPushButton#langBtn:!checked:hover {{
+            border: 1px solid {accent_light};
+        }}
+        QPushButton#primaryButton {{
+            background-color: {accent_btn}; color: {text_on_accent};
+            border: 1px solid {accent_btn}; font-weight: bold;
+            padding: 6px 24px;
+        }}
+        QPushButton#primaryButton:hover {{
+            background-color: #0D47A1;
         }}
         """
         ss += btn_style
-        ss += """
-        QListWidget::item { padding: 4px 8px; }
-        QListWidget::item:checked { background-color: rgba(100, 181, 246, 0.15); }
-        QListWidget::indicator {
+        ss += btn_style
+        ss += f"""
+        QListWidget::item {{ padding: 4px 8px; }}
+        QListWidget::item:checked {{ background-color: rgba(21, 101, 192, 0.15); }}
+        QListWidget::indicator {{
             width: 16px; height: 16px;
-            border: 2px solid """ + ("#888888" if self._is_dark else "#555555") + """;
-            border-radius: 3px; background: """ + ("#3A3A3A" if self._is_dark else "#FFFFFF") + """;
+            border: 2px solid {border_def};
+            border-radius: 3px; background: {indicator_bg};
             margin-right: 6px;
-        }
-        QListWidget::indicator:checked {
-            background: """ + accent + """; border: 2px solid """ + accent + """;
-        }
-        QListWidget::indicator:hover {
-            border: 2px solid """ + accent + """;
-        }
+        }}
+        QListWidget::indicator:checked {{
+            background: {accent_btn}; border: 2px solid {accent_btn};
+        }}
+        QListWidget::indicator:hover {{
+            border: 2px solid {accent_light};
+        }}
+        QLineEdit#dropField, QLineEdit#commandField {{
+            border: 1px solid {border_def}; border-radius: 4px;
+            padding: 4px 8px;
+        }}
         """
         self._app_ref.setStyleSheet(ss)
 
@@ -504,6 +529,7 @@ class MainWindow(QMainWindow):
         current_lang = self._tr.current_language
         for code, name in langs.items():
             btn = QPushButton(name)
+            btn.setObjectName("langBtn")
             btn.setCheckable(True)
             btn.setChecked(code == current_lang)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)

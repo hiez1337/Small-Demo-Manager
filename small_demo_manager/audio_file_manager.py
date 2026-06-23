@@ -1,6 +1,5 @@
 import os
 import shutil
-from dataclasses import dataclass, field
 from typing import List
 
 from config import read
@@ -9,15 +8,16 @@ from config import read
 SAVED_AUDIO_DIR_VAR = "SavedVoiceFilesPath"
 
 
-@dataclass
 class AudioFileInfo:
-    folder_name: str
-    file_name: str
-    full_path: str
+    def __init__(self, folder_name: str, file_name: str, full_path: str):
+        self.folder_name = folder_name
+        self.file_name = file_name
+        self.full_path = full_path
 
 
 class SavedAudioFiles:
-    files: List[AudioFileInfo] = field(default_factory=list)
+    def __init__(self):
+        self.files: List[AudioFileInfo] = []
 
 
 saved_audio_files = SavedAudioFiles()

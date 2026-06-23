@@ -119,7 +119,7 @@ class MainWindow(QMainWindow):
         self._tr.language_changed.connect(self._retranslate)
 
         self.setWindowTitle(tr("app.title"))
-        self.setMinimumSize(1100, 620)
+        self.setMinimumSize(1375, 775)
         self.setAcceptDrops(True)
 
         self._init_ui()

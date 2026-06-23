@@ -792,7 +792,7 @@ class MainWindow(QMainWindow):
 
         menu.addAction("Steam Profile", lambda: webbrowser.open(profile_url))
         menu.addAction("cswatch.in", lambda: webbrowser.open(f"https://cswatch.in/player/{steam_id}"))
-        menu.addAction("leetify.com", lambda: webbrowser.open(f"https://leetify.com/player/{steam_id}"))
+        menu.addAction("leetify.com", lambda: webbrowser.open(f"https://leetify.com/app/profile/{steam_id}"))
         menu.addAction("csstats.gg", lambda: webbrowser.open(f"https://csstats.gg/player/{steam_id}"))
 
         menu.exec(list_widget.viewport().mapToGlobal(pos))

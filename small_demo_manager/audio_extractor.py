@@ -3,6 +3,13 @@ import re
 import struct
 from typing import Callable, Optional
 
+# Add bundled opus.dll to PATH before importing opuslib
+_resources_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")
+_opus_path = os.path.join(_resources_dir, "opus.dll")
+if os.path.isfile(_opus_path):
+    os.environ["PATH"] = _resources_dir + os.pathsep + os.environ.get("PATH", "")
+import opuslib
+
 from demoparser2 import DemoParser
 from models import AudioEntry
 
@@ -63,11 +70,6 @@ def extract_voice(
     processed = 0
     result: dict[str, list[AudioEntry]] = {}
     all_entries: list[AudioEntry] = []
-
-    try:
-        import opuslib
-    except ImportError:
-        raise ImportError("opuslib is required for Opus decoding. Install: pip install opuslib")
 
     decoder = opuslib.Decoder(SAMPLE_RATE, CHANNELS)
 

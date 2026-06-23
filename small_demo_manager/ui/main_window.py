@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QLabel, QPushButton, QLineEdit, QListWidget, QListWidgetItem,
     QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox,
     QProgressBar, QFileDialog, QMessageBox, QMenu, QSizePolicy,
-    QFrame, QTextEdit, QScrollArea, QComboBox
+    QFrame, QTextEdit, QScrollArea
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt6.QtGui import QAction, QIcon, QFont, QColor, QBrush, QDragEnterEvent, QDropEvent
@@ -141,8 +141,30 @@ class MainWindow(QMainWindow):
         theme = "dark_teal.xml" if self._is_dark else "light_teal.xml"
         apply_stylesheet(self._app_ref, theme=theme)
         ss = self._app_ref.styleSheet()
-        ss += "\nQComboBox { text-align: left; padding-left: 8px; }"
-        ss += "\nQComboBox QAbstractItemView { text-align: left; }"
+
+        accent = "#64B5F6" if self._is_dark else "#1976D2"
+        bg = "#2A2A2A" if self._is_dark else "#E0E0E0"
+        text = "#FFFFFF" if self._is_dark else "#212121"
+        border = "#555555" if self._is_dark else "#BDBDBD"
+
+        btn_style = f"""
+        QPushButton {{
+            text-align: center; padding: 6px 18px; border-radius: 6px;
+            font-size: 13px; min-width: 90px;
+        }}
+        QPushButton:checked {{
+            background-color: {accent}; color: #FFFFFF;
+            border: 1px solid {accent}; font-weight: bold;
+        }}
+        QPushButton:!checked {{
+            background-color: {bg}; color: {text};
+            border: 1px solid {border};
+        }}
+        QPushButton:!checked:hover {{
+            border: 1px solid {accent};
+        }}
+        """
+        ss += btn_style
         self._app_ref.setStyleSheet(ss)
 
     def toggle_theme(self):
@@ -435,18 +457,19 @@ class MainWindow(QMainWindow):
         lang_card = Card(tr("settings.lang.title"))
         lang_row = QHBoxLayout()
         lang_row.addWidget(QLabel(tr("settings.lang.label")))
-        self.lang_combo = QComboBox()
+        self.lang_btns: dict[str, QPushButton] = {}
         from translate import get_translator
         langs = get_translator().supported_languages()
         current_lang = self._tr.current_language
-        self.lang_combo_idx: dict[int, str] = {}
-        for i, (code, name) in enumerate(langs.items()):
-            self.lang_combo.addItem(name)
-            self.lang_combo_idx[i] = code
-            if code == current_lang:
-                self.lang_combo.setCurrentIndex(i)
-        self.lang_combo.currentIndexChanged.connect(self._on_language_changed)
-        lang_row.addWidget(self.lang_combo)
+        for code, name in langs.items():
+            btn = QPushButton(name)
+            btn.setCheckable(True)
+            btn.setChecked(code == current_lang)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setMinimumWidth(90)
+            btn.clicked.connect(lambda checked, c=code: self._on_lang_btn_clicked(c))
+            self.lang_btns[code] = btn
+            lang_row.addWidget(btn)
         lang_row.addStretch()
         lang_card.add_layout(lang_row)
         layout.addWidget(lang_card)
@@ -972,8 +995,11 @@ class MainWindow(QMainWindow):
     def _on_patch_notes_fetched(self, text: str):
         self.patch_notes.setPlainText(text)
 
-    def _on_language_changed(self, idx: int):
-        code = self.lang_combo_idx[idx]
+    def _on_lang_btn_clicked(self, code: str):
+        if code == self._tr.current_language:
+            return
+        for c, btn in self.lang_btns.items():
+            btn.setChecked(c == code)
         self._tr.load(code)
         write("Language", code)
 

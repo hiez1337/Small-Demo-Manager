@@ -1,5 +1,21 @@
 # Patch Notes
 
+## v2.0.0 — 23.06.2026
+- Полный порт с C# .NET 8 WinForms на Python
+- Material Design 3 интерфейс (PyQt6 + qt-material)
+- Парсинг .dem через demoparser2 с точной статистикой K/D/A/DMG/MVP
+- Имена команд из FACEIT (team_BubenoLatino и т.д.)
+- Opus → WAV извлечение голосового чата (opuslib)
+- WAV плеер (pygame)
+- Bitfield Calculator с копированием команды в буфер
+- Drag-and-drop .dem файлов на окно
+- Контекстные меню игроков (SteamID64, Steam/cswatch/leetify/csstats)
+- Shell контекстное меню для .dem файлов (реестр)
+- Тёмная/светлая тема Material Design
+- JSON конфиг в %LOCALAPPDATA%/Small-Demo-Manager
+- Проверка обновлений через GitHub Releases
+- Патчноты загружаются с GitHub
+
 ## 23.12.2025
 - Update Parser to read older demos.
 
